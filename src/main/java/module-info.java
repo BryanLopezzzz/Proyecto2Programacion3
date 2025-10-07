@@ -5,6 +5,9 @@ module ProyectoProgramacion3 {
     requires jakarta.xml.bind;
     requires javafx.base;
     requires javafx.graphics;
+    requires com.zaxxer.hikari;
+    requires com.mysql.cj;
+    requires java.sql;
 
     // JavaFX
     opens hospital.controller to javafx.fxml;

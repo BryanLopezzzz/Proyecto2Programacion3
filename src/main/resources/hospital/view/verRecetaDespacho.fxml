@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="873.0" style="-fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.VerRecetaDespachoController">
+   <children>
+      <Text fill="#16254c" layoutX="389.0" layoutY="70.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Receta">
+         <font>
+            <Font name="System Bold" size="32.0" />
+         </font>
+      </Text>
+      <Pane layoutX="91.0" layoutY="114.0" prefHeight="176.0" prefWidth="336.0" style="-fx-border-color: #b3b3b3; -fx-border-radius: 4;">
+         <children>
+            <Label layoutX="28.0" layoutY="27.0" text="ID:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="28.0" layoutY="59.0" text="Nombre:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="28.0" layoutY="92.0" text="Nació:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblPacienteId" layoutX="108.0" layoutY="29.0" prefHeight="25.0" prefWidth="151.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblPacienteNombre" layoutX="108.0" layoutY="59.0" prefHeight="25.0" prefWidth="206.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblPacienteNacimiento" layoutX="108.0" layoutY="92.0" prefHeight="25.0" prefWidth="140.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label layoutX="28.0" layoutY="125.0" text="Teléfono:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblPacienteTelefono" layoutX="108.0" layoutY="125.0" prefHeight="25.0" prefWidth="140.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Line endX="54.5" endY="20.0" layoutX="34.0" layoutY="-19.0" startX="-7.0" startY="20.0" stroke="WHITE" strokeWidth="3.0" />
+            <Label layoutX="27.0" layoutY="-13.0" text="Paciente" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+         </children>
+      </Pane>
+      <Button id="btnVolver" fx:id="btnVolver" contentDisplay="GRAPHIC_ONLY" layoutX="91.0" layoutY="44.0" mnemonicParsing="false" onAction="#Volver" prefHeight="28.0" prefWidth="29.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Volver">
+         <graphic>
+            <ImageView fitHeight="27.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../icons/undo-2.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </Button>
+      <Pane layoutX="91.0" layoutY="321.0" prefHeight="200.0" prefWidth="336.0" style="-fx-border-color: #b3b3b3; -fx-border-radius: 4;">
+         <children>
+            <Label fx:id="lblIndicaciones" alignment="TOP_LEFT" layoutX="34.0" layoutY="27.0" prefHeight="150.0" prefWidth="268.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+         </children>
+      </Pane>
+      <Line endX="83.0" endY="20.0" layoutX="131.0" layoutY="301.0" startX="-7.0" startY="20.0" stroke="WHITE" strokeWidth="3.0" />
+      <Label layoutX="124.0" layoutY="307.0" text="Indicaciones" textFill="#9a9a9a">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Label>
+      <Pane layoutX="444.0" layoutY="115.0" prefHeight="238.0" prefWidth="347.0" style="-fx-border-color: #b3b3b3; -fx-border-radius: 4;">
+         <children>
+            <Label layoutX="27.0" layoutY="23.0" text="Medicamento:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="52.0" text="Presentación:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicamentoNombre" layoutX="156.0" layoutY="23.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicamentoPresentacion" layoutX="156.0" layoutY="52.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Line endX="42.265625" endY="20.0" layoutX="34.0" layoutY="-20.0" startX="-7.0" startY="20.0" stroke="WHITE" strokeWidth="3.0" />
+            <Label layoutX="27.0" layoutY="-14.0" text="Detalle" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="80.0" text="Cantidad:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="108.0" text="Duración:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicamentoCantidad" layoutX="156.0" layoutY="80.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicamentoDuracion" layoutX="156.0" layoutY="108.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="136.0" text="Confeccionada:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblRecetaConfeccion" layoutX="156.0" layoutY="136.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="164.0" text="Fecha de retiro:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="193.0" text="Estado:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblRecetaRetiro" layoutX="156.0" layoutY="164.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblRecetaEstado" layoutX="156.0" layoutY="193.0" prefHeight="25.0" prefWidth="166.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+         </children>
+      </Pane>
+      <Pane layoutX="444.0" layoutY="388.0" prefHeight="132.0" prefWidth="347.0" style="-fx-border-color: #b3b3b3; -fx-border-radius: 4;">
+         <children>
+            <Label layoutX="27.0" layoutY="23.0" text="ID:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="55.0" text="Nombre:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label layoutX="27.0" layoutY="88.0" text="Especialidad:" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicoId" layoutX="142.0" layoutY="23.0" prefHeight="25.0" prefWidth="151.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicoNombre" layoutX="142.0" layoutY="55.0" prefHeight="25.0" prefWidth="173.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblMedicoEspecialidad" layoutX="143.0" layoutY="87.0" prefHeight="25.0" prefWidth="87.0" textAlignment="JUSTIFY" wrapText="true">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Label>
+            <Line endX="48.0" endY="20.0" layoutX="34.0" layoutY="-19.0" startX="-7.0" startY="20.0" stroke="WHITE" strokeWidth="3.0" />
+            <Label layoutX="27.0" layoutY="-13.0" text="Médico" textFill="#9a9a9a">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+         </children>
+      </Pane>
+   </children>
+</AnchorPane>

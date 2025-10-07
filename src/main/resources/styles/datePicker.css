@@ -1,0 +1,21 @@
+/* Estilo para el botón del calendario */
+.date-picker .arrow-button {
+    -fx-background-radius: 0 4 4 0;
+    -fx-cursor: hand;
+    -fx-background-image: url("../icons/calendar.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-background-size: 16px 16px;
+    -fx-padding: 0 12 0 12;
+}
+
+.date-picker .arrow-button .arrow {
+    -fx-background-color: transparent;
+}
+
+/* Quitar sombreado del campo */
+.date-picker, 
+.date-picker .text-field {
+    -fx-background-color: #ffffff;
+    -fx-background-insets: 0; /* sin sombra interna */
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MedicosData>
+    <Medicos>
+        <Medico>
+            <id>667</id>
+            <clave>med123</clave>
+            <nombre>Andrés</nombre>
+            <especialidad>Pediatría</especialidad>
+        </Medico>
+        <Medico>
+            <id>669</id>
+            <clave>med789</clave>
+            <nombre>Carlos</nombre>
+            <especialidad>Neurología</especialidad>
+        </Medico>
+        <Medico>
+            <id>666</id>
+            <clave>666</clave>
+            <nombre>Claudia</nombre>
+            <especialidad>Ginecología</especialidad>
+        </Medico>
+        <Medico>
+            <id>670</id>
+            <clave>med321</clave>
+            <nombre>Ellen</nombre>
+            <especialidad>Dermatología</especialidad>
+        </Medico>
+        <Medico>
+            <id>672</id>
+            <clave>672</clave>
+            <nombre>Helenio Herrera</nombre>
+            <especialidad>Pediatria</especialidad>
+        </Medico>
+        <Medico>
+            <id>668</id>
+            <clave>med456</clave>
+            <nombre>Lucía</nombre>
+            <especialidad>Cardiología</especialidad>
+        </Medico>
+    </Medicos>
+</MedicosData>

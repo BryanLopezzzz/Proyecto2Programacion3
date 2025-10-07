@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PacientesData>
+    <Pacientes>
+        <Paciente>
+            <id>300</id>
+            <nombre>Pedri</nombre>
+            <telefono>70001111</telefono>
+            <fechaNacimiento>2002-11-25</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>301</id>
+            <nombre>Ousmane Dembele</nombre>
+            <telefono>70002222</telefono>
+            <fechaNacimiento>1997-05-15</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>302</id>
+            <nombre>Raphinha</nombre>
+            <telefono>70003333</telefono>
+            <fechaNacimiento>1996-12-14</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>303</id>
+            <nombre>Nico Paz</nombre>
+            <telefono>70004444</telefono>
+            <fechaNacimiento>2004-09-08</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>305</id>
+            <nombre>Hugo Ekitike</nombre>
+            <telefono>70006666</telefono>
+            <fechaNacimiento>2002-06-20</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>306</id>
+            <nombre>Alexander Isak</nombre>
+            <telefono>70007777</telefono>
+            <fechaNacimiento>1999-09-21</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>307</id>
+            <nombre>Viktor Gyokeres</nombre>
+            <telefono>70008888</telefono>
+            <fechaNacimiento>1998-06-04</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>516498</id>
+            <nombre>Vitinha</nombre>
+            <telefono>100111010</telefono>
+            <fechaNacimiento>2025-09-10</fechaNacimiento>
+        </Paciente>
+        <Paciente>
+            <id>1180</id>
+            <nombre>Aaron</nombre>
+            <telefono>84297869</telefono>
+            <fechaNacimiento>2000-09-20</fechaNacimiento>
+        </Paciente>
+    </Pacientes>
+</PacientesData>

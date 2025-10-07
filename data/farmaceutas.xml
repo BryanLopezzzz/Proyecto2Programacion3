@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<FarmaceutasData>
+    <Farmaceutas>
+        <Farmaceuta>
+            <id>123457</id>
+            <clave>ana24</clave>
+            <nombre>Anita</nombre>
+        </Farmaceuta>
+        <Farmaceuta>
+            <id>123458</id>
+            <clave>carl55</clave>
+            <nombre>Carlos</nombre>
+        </Farmaceuta>
+        <Farmaceuta>
+            <id>123460</id>
+            <clave>jose11</clave>
+            <nombre>Jose</nombre>
+        </Farmaceuta>
+        <Farmaceuta>
+            <id>123456789</id>
+            <clave>123456789</clave>
+            <nombre>Juan Carlos</nombre>
+        </Farmaceuta>
+        <Farmaceuta>
+            <id>123461</id>
+            <clave>luisa77</clave>
+            <nombre>Luisa</nombre>
+        </Farmaceuta>
+        <Farmaceuta>
+            <id>123459</id>
+            <clave>mari88</clave>
+            <nombre>María</nombre>
+        </Farmaceuta>
+    </Farmaceutas>
+</FarmaceutasData>

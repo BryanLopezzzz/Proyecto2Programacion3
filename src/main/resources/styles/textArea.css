@@ -1,0 +1,10 @@
+.text-area {
+    -fx-background-insets: 0; /* sin sombra interna */
+    -fx-border-color: #b3b3b3;
+    -fx-border-radius: 4;
+}
+
+.text-area .content {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+}

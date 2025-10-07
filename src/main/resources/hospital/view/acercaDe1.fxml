@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="873.0" style="-fx-background-color: #16254c;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.AcercaDeController">
+   <children>
+      <Text fill="#75c594" layoutX="381.0" layoutY="68.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Acerca de">
+         <font>
+            <Font name="Segoe UI Bold" size="32.0" />
+         </font>
+      </Text>
+      <Button id="btnVolver" fx:id="btnVolver" contentDisplay="GRAPHIC_ONLY" layoutX="130.0" layoutY="37.0" mnemonicParsing="false" onAction="#Volver" prefHeight="28.0" prefWidth="29.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Volver">
+         <graphic>
+            <ImageView fitHeight="27.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../icons/undo-2.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </Button>
+      <Text fill="#75c594" layoutX="134.0" layoutY="210.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Misión">
+         <font>
+            <Font name="System Bold" size="24.0" />
+         </font>
+      </Text>
+      <Text fill="#75c594" layoutX="136.0" layoutY="352.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Visión">
+         <font>
+            <Font name="System Bold" size="24.0" />
+         </font>
+      </Text>
+      <Label layoutX="133.0" layoutY="88.0" prefHeight="90.0" prefWidth="632.0" text="En nuestro despacho de recetas nos dedicamos a brindar un servicio ágil, seguro y confiable a todos los pacientes. Nuestro equipo está comprometido con la salud y el bienestar de la comunidad, asegurando que cada persona reciba la medicación prescrita de manera oportuna y con la orientación adecuada para su uso responsable." textAlignment="JUSTIFY" textFill="WHITE" wrapText="true">
+         <font>
+            <Font name="Segoe UI" size="14.0" />
+         </font>
+      </Label>
+      <Label layoutX="134.0" layoutY="222.0" prefHeight="95.0" prefWidth="277.0" text="Garantizar el acceso a medicamentos de calidad mediante un servicio eficiente, humano y profesional, apoyando el tratamiento de los pacientes y contribuyendo a mejorar su calidad de vida." textAlignment="JUSTIFY" textFill="WHITE" wrapText="true">
+         <font>
+            <Font name="Segoe UI" size="14.0" />
+         </font>
+      </Label>
+      <Label layoutX="135.0" layoutY="365.0" prefHeight="120.0" prefWidth="277.0" text="Ser un despacho de recetas referente en el sector salud, reconocido por la excelencia en el servicio al paciente, la innovación en nuestros procesos y el compromiso con el uso seguro y responsable de los medicamentos." textAlignment="JUSTIFY" textFill="WHITE" wrapText="true">
+         <font>
+            <Font name="Segoe UI" size="14.0" />
+         </font>
+      </Label>
+      <ImageView fitHeight="25.0" fitWidth="31.0" layoutX="603.0" layoutY="500.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../icons/instaVerde.png" />
+         </image>
+      </ImageView>
+      <Text fill="#75c594" layoutX="641.0" layoutY="517.0" strokeType="OUTSIDE" strokeWidth="0.0" text="bryanlopez_779">
+         <font>
+            <Font name="Segoe UI Bold" size="16.0" />
+         </font>
+      </Text>
+      <ImageView fitHeight="25.0" fitWidth="31.0" layoutX="390.0" layoutY="503.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../icons/instaVerde.png" />
+         </image>
+      </ImageView>
+      <Text fill="#75c594" layoutX="428.0" layoutY="520.0" strokeType="OUTSIDE" strokeWidth="0.0" text="josecastr__">
+         <font>
+            <Font name="Segoe UI Bold" size="16.0" />
+         </font>
+      </Text>
+      <ImageView fitHeight="25.0" fitWidth="31.0" layoutX="137.0" layoutY="503.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../icons/instaVerde.png" />
+         </image>
+      </ImageView>
+      <Text fill="#75c594" layoutX="175.0" layoutY="520.0" strokeType="OUTSIDE" strokeWidth="0.0" text="a_ruiz_16">
+         <font>
+            <Font name="Segoe UI Bold" size="16.0" />
+         </font>
+      </Text>
+      <ImageView fitHeight="236.0" fitWidth="323.0" layoutX="441.0" layoutY="228.0" pickOnBounds="true">
+         <image>
+            <Image url="@../../images/acerca-de.jpg" />
+         </image>
+      </ImageView>
+   </children>
+</AnchorPane>

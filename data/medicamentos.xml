@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MedicamentosData>
+    <Medicamentos>
+        <Medicamento>
+            <codigo>1122</codigo>
+            <nombre>Clonacepan</nombre>
+            <presentacion>500mg</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>405</codigo>
+            <nombre>Difenidramina</nombre>
+            <presentacion>150mg</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>600</codigo>
+            <nombre>Emma</nombre>
+            <presentacion>Oral</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>401</codigo>
+            <nombre>Ibuprofeno</nombre>
+            <presentacion>Tableta</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>403</codigo>
+            <nombre>Loratadina</nombre>
+            <presentacion>Jarabe</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>405</codigo>
+            <nombre>Loratadina</nombre>
+            <presentacion>100mg</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>404</codigo>
+            <nombre>Metformina</nombre>
+            <presentacion>Tableta</presentacion>
+        </Medicamento>
+        <Medicamento>
+            <codigo>635</codigo>
+            <nombre>Peptobizmol</nombre>
+            <presentacion>500ml</presentacion>
+        </Medicamento>
+    </Medicamentos>
+</MedicamentosData>

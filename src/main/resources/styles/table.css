@@ -1,0 +1,13 @@
+/* Encabezado del TableView */
+.table .column-header-background {
+    -fx-pref-height: 36px; /* altura de la fila de encabezados */
+}
+
+/* Texto en los encabezados */
+.table .column-header .label {
+    -fx-background-color: #16254c;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-font-size: 14px;
+}

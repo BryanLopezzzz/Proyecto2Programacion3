@@ -1,7 +1,7 @@
 package hospital.controller;
 
-import hospital.Intermediaria.DashboardIntermediaria;
-import hospital.Intermediaria.LoginIntermediaria;
+import hospital.logica.DashboardLogica;
+import hospital.logica.LoginLogica;
 import hospital.logica.Sesion;
 import hospital.logica.UsuarioManager;
 import hospital.model.Medico;
@@ -60,16 +60,16 @@ public class DashboardController {
     @FXML
     private Pane panePieChart;
 
-    private final DashboardIntermediaria dashboardIntermediaria = new DashboardIntermediaria();
+    private final DashboardLogica dashboardLogica = new DashboardLogica();
     private final UsuarioManager usuarioManager = new UsuarioManager();
-    private LoginIntermediaria loginIntermediaria;
+    private LoginLogica loginLogica;
 
-    public void setLoginController(LoginIntermediaria loginIntermediaria) {
-        this.loginIntermediaria = loginIntermediaria;
+    public void setLoginController(LoginLogica loginLogica) {
+        this.loginLogica = loginLogica;
     }
 
-    public LoginIntermediaria getLoginController() {
-        return loginIntermediaria;
+    public LoginLogica getLoginController() {
+        return loginLogica;
     }
 
     @FXML
@@ -181,7 +181,7 @@ public class DashboardController {
         series.setName("Medicamentos");
 
         try {
-            var datos = dashboardIntermediaria.contarMedicamentosPorMes(
+            var datos = dashboardLogica.contarMedicamentosPorMes(
                     usuario,
                     YearMonth.now().minusMonths(5),
                     YearMonth.now()
@@ -204,7 +204,7 @@ public class DashboardController {
         pieChart.setPrefHeight(250);
 
         try {
-            var datos = dashboardIntermediaria.contarRecetasPorEstado(usuario);
+            var datos = dashboardLogica.contarRecetasPorEstado(usuario);
             datos.forEach((estado, cantidad) ->
                     pieChart.getData().add(new PieChart.Data(estado, cantidad))
             );
@@ -365,7 +365,7 @@ public class DashboardController {
 
             CambioClaveController cambioClaveController = fxmlLoader.getController();
             cambioClaveController.setUsuario(Sesion.getUsuario());
-            cambioClaveController.setLoginController(loginIntermediaria);
+            cambioClaveController.setLoginController(loginLogica);
 
             Stage stage = (Stage) btnCambiarClave.getScene().getWindow();
             stage.setScene(scene);
@@ -378,8 +378,8 @@ public class DashboardController {
     }
     @FXML
     public void logout(){
-        if (loginIntermediaria != null) {
-            loginIntermediaria.logout();
+        if (loginLogica != null) {
+            loginLogica.logout();
         }
 
         try {

@@ -1,6 +1,6 @@
 package hospital.controller.busqueda;
 
-import hospital.Intermediaria.PacienteIntermediaria;
+import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
 import hospital.model.Paciente;
 import javafx.collections.FXCollections;
@@ -43,7 +43,7 @@ public class BuscarPacientePreescripcionController {
     @FXML
     private Button btnVolver;
 
-    private final PacienteIntermediaria pacienteIntermediaria = new PacienteIntermediaria();
+    private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador();
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 

@@ -1,7 +1,8 @@
 package hospital.controller.busqueda;
 
-import hospital.Intermediaria.FarmaceutaIntermediaria;
+
 import hospital.controller.EditarFarmaceutaController;
+import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
 import javafx.collections.FXCollections;
@@ -53,7 +54,7 @@ public class BuscarFarmaceutaController {
     @FXML
     private Button btnBuscar;
 
-    private final FarmaceutaIntermediaria farmaceutaIntermediaria = new FarmaceutaIntermediaria();
+    private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
     private final Administrador admin = new Administrador(); // puedes pasar el admin logueado
 
     private ObservableList<Farmaceuta> farmaceutasObs;

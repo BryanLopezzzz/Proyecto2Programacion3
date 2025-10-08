@@ -1,6 +1,6 @@
 package hospital.controller.registro;
 
-import hospital.Intermediaria.FarmaceutaIntermediaria;
+import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
 import javafx.event.ActionEvent;
@@ -25,7 +25,7 @@ public class RegistroFarmaceutaController {
     @FXML
     private Button btnVolver;
 
-    private final FarmaceutaIntermediaria farmaceutaIntermediaria = new FarmaceutaIntermediaria();
+    private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
     private final Administrador admin = new Administrador(); // Se debe pasar el admin logueado
 
     @FXML

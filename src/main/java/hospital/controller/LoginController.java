@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.LoginIntermediaria;
+import hospital.logica.LoginLogica;
 import hospital.logica.Sesion;
 import hospital.model.Usuario;
 import javafx.fxml.FXML;
@@ -23,7 +23,7 @@ public class LoginController {
     @FXML
     private Button btnEntrar;
 
-    private final LoginIntermediaria loginIntermediaria = new LoginIntermediaria();
+    private final LoginLogica loginLogica = new LoginLogica();
     private boolean claveVisible = false;
 
     @FXML
@@ -42,7 +42,7 @@ public class LoginController {
         }
 
         try {
-            Usuario usuario = loginIntermediaria.login(id, clave);
+            Usuario usuario = loginLogica.login(id, clave);
             Sesion.setUsuario(usuario);
 
             // cargar la vista principal(esto puede cambiar si el menu correcto no es ese)
@@ -51,7 +51,7 @@ public class LoginController {
 
             // mandar el usuario al dashboard
             DashboardController dashboardController = loader.getController();
-            dashboardController.setLoginController(loginIntermediaria);
+            dashboardController.setLoginController(loginLogica);
 
             Stage stage = new Stage();
             stage.setTitle("Menú Principal");

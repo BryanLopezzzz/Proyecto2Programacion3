@@ -1,7 +1,7 @@
 package hospital.controller;
 
-import hospital.Intermediaria.RecetaIntermediaria;
 import hospital.controller.busqueda.BuscarPacientePreescripcionController;
+import hospital.logica.RecetaLogica;
 import javafx.collections.FXCollections;
 import hospital.model.*;
 import javafx.collections.ObservableList;
@@ -52,7 +52,7 @@ public class DespachoController {
 
     private Paciente pacienteSeleccionado;
 
-    private final RecetaIntermediaria recetaIntermediaria = new RecetaIntermediaria();
+    private final RecetaLogica recetaIntermediaria = new RecetaLogica();
     private final ObservableList<Receta> recetasObservable = FXCollections.observableArrayList();
 
     public void initialize() {
@@ -93,7 +93,7 @@ public class DespachoController {
 
     private void cargarRecetas() {
         try {
-            List<Receta> recetas = recetaIntermediaria.listarRecetas();
+            List<Receta> recetas = recetaIntermediaria.listar();
             recetasObservable.setAll(recetas);
         } catch (Exception e) {
             Alerta.error("Error", "Error cargando recetas: " + e.getMessage());

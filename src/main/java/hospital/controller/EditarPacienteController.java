@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.PacienteIntermediaria;
+import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
 import hospital.model.Paciente;
 import javafx.event.ActionEvent;
@@ -34,7 +34,7 @@ public class EditarPacienteController {
     @FXML
     private Button btnVolver;
 
-    private final PacienteIntermediaria pacienteIntermediaria = new PacienteIntermediaria();
+    private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador();
     private Paciente pacienteOriginal;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");

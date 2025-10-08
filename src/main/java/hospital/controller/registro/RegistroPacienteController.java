@@ -1,6 +1,6 @@
 package hospital.controller.registro;
 
-import hospital.Intermediaria.PacienteIntermediaria;
+import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
 import hospital.model.Paciente;
 import javafx.event.ActionEvent;
@@ -24,7 +24,7 @@ public class RegistroPacienteController {
     @FXML private Button btnGuardar; // El FXML no tiene fx:id, necesita agregarse
     @FXML private Button btnVolver;
 
-    private final PacienteIntermediaria pacienteIntermediaria = new PacienteIntermediaria();
+    private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador(); // Puedes pasar el admin logueado
 
     @FXML

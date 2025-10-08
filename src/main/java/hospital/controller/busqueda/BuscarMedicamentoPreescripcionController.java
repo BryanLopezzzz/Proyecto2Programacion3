@@ -1,6 +1,6 @@
 package hospital.controller.busqueda;
 
-import hospital.Intermediaria.MedicamentoIntermediaria;
+import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
 import javafx.application.Platform;
@@ -30,7 +30,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
     @FXML private Button btnVolver;
     @FXML private Button btnSeleccionar;
 
-    private final MedicamentoIntermediaria medicamentoIntermediaria;
+    private final MedicamentoLogica medicamentoIntermediaria;
     private final Administrador administrador;
     private ObservableList<Medicamento> medicamentos;
     private ObservableList<Medicamento> todosMedicamentos;
@@ -38,7 +38,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
     private Timer searchTimer;
 
     public BuscarMedicamentoPreescripcionController() {
-        this.medicamentoIntermediaria = new MedicamentoIntermediaria();
+        this.medicamentoIntermediaria = new MedicamentoLogica();
         this.administrador = new Administrador();
     }
 

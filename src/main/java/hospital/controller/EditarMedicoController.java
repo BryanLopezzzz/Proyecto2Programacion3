@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.MedicoIntermediaria;
+import hospital.logica.MedicoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medico;
 import javafx.event.ActionEvent;
@@ -30,7 +30,7 @@ public class EditarMedicoController {
     @FXML
     private Button btnVolver;
 
-    private final MedicoIntermediaria medicoIntermediaria = new MedicoIntermediaria();
+    private final MedicoLogica medicoIntermediaria = new MedicoLogica();
     private final Administrador admin = new Administrador();
     private Medico medicoActual;
 

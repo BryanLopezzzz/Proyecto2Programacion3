@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.HistoricoRecetasIntermediaria;
+import hospital.logica.HistoricoRecetasLogica;
 import hospital.logica.Sesion;
 import hospital.model.EstadoReceta;
 import hospital.model.Receta;
@@ -45,7 +45,7 @@ public class HistoricoRecetasController {
     @FXML
     private ComboBox<String> cmbFiltrar;
 
-    private HistoricoRecetasIntermediaria controller = new HistoricoRecetasIntermediaria();
+    private HistoricoRecetasLogica controller = new HistoricoRecetasLogica();
     private ObservableList<Receta> recetasObservable;
     private ObservableList<Receta> todasLasRecetas;
     private Timer searchTimer;

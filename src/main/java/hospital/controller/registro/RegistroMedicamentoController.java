@@ -1,6 +1,6 @@
 package hospital.controller.registro;
 
-import hospital.Intermediaria.MedicamentoIntermediaria;
+import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
 import javafx.fxml.FXML;
@@ -33,11 +33,11 @@ public class RegistroMedicamentoController implements Initializable {
     @FXML
     private Button btnVolver;
 
-    private final MedicamentoIntermediaria medicamentoIntermediaria;
+    private final MedicamentoLogica medicamentoIntermediaria;
     private final Administrador administrador;
 
     public RegistroMedicamentoController() {
-        this.medicamentoIntermediaria = new MedicamentoIntermediaria();
+        this.medicamentoIntermediaria = new MedicamentoLogica();
         this.administrador = new Administrador();
     }
 

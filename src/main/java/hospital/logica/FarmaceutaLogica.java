@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import hospital.datos.conector.MedicamentoConector;
 import hospital.datos.conector.PacienteConector;
 import hospital.logica.mapper.PacienteMapper;
+import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
 import hospital.datos.FarmaceutaDatos;
 import hospital.datos.conector.FarmaceutaConector;
@@ -42,10 +43,20 @@ public class FarmaceutaLogica {
         datos.save(con);
     }
 
+    public void agregar(Administrador admin, Farmaceuta f) throws Exception {
+        validarAdmin(admin);
+        agregar(f);
+    }
+
     public List<Farmaceuta> listar() {
         return datos.load().getFarmaceutas().stream()
                 .map(FarmaceutaMapper::fromXML)
                 .collect(Collectors.toList());
+    }
+
+    public List<Farmaceuta> listar(Administrador admin) throws Exception {
+        validarAdmin(admin);
+        return listar();
     }
 
     public void modificar(Farmaceuta farmaceuta) throws Exception {
@@ -62,6 +73,11 @@ public class FarmaceutaLogica {
 
         ordenarPorNombre(con);
         datos.save(con);
+    }
+
+    public void modificar(Administrador admin, Farmaceuta f) throws Exception {
+        validarAdmin(admin);
+        modificar(f);
     }
 
     private void validarAlta(Farmaceuta f) throws Exception {
@@ -108,6 +124,11 @@ public class FarmaceutaLogica {
         return eliminado;
     }
 
+    public void borrar(Administrador admin, String id) throws Exception {
+        validarAdmin(admin);
+        eliminar(id);
+    }
+
     public Farmaceuta buscarPorId(String id) {
         if (id == null) return null;
         return datos.load().getFarmaceutas().stream()
@@ -124,6 +145,16 @@ public class FarmaceutaLogica {
                 .filter(f -> f.getNombre() != null && f.getNombre().toLowerCase().contains(q))
                 .map(FarmaceutaMapper::fromXML)
                 .collect(Collectors.toList());
+    }
+
+    public Farmaceuta buscarPorId(Administrador admin, String id) throws Exception {
+        validarAdmin(admin);
+        return buscarPorId(id);
+    }
+
+    public List<Farmaceuta> buscarPorNombre(Administrador admin, String nombre) throws Exception {
+        validarAdmin(admin);
+        return buscarPorNombre(nombre);
     }
 
     public void generarReporte(String rutaReporte) {
@@ -149,5 +180,14 @@ public class FarmaceutaLogica {
         }
     }
 
+    public void generarReporte(Administrador admin, String rutaReporte) throws Exception {
+        validarAdmin(admin);
+        generarReporte(rutaReporte);
+    }
 
+    private void validarAdmin(Administrador admin) throws Exception {
+        if (admin == null) {
+            throw new Exception("Solo los administradores pueden ejecutar esta acción.");
+        }
+    }
 }

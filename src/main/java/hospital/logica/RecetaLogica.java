@@ -47,6 +47,11 @@ public class RecetaLogica {
         return receta;
     }
 
+    public Receta crearReceta(Medico medico, Receta receta) throws Exception {
+        validarMedico(medico);
+        return crearReceta(receta);
+    }
+
     // =========================
     // Detalles / Estado
     // =========================
@@ -76,6 +81,11 @@ public class RecetaLogica {
         if (r.getFechaRetiro().isBefore(r.getFecha()))
             throw new Exception("La fecha de retiro no puede ser anterior a la fecha de confección.");
     }
+
+    private void validarMedico(Medico medico) throws Exception {
+        if (medico == null) throw new Exception("Solo los médicos pueden ejecutar esta acción.");
+    }
+
     public void actualizarEstado(String recetaId, EstadoReceta nuevoEstado) throws Exception {
         Receta receta = buscarPorId(recetaId);
         if (receta == null) throw new Exception("Receta no encontrada.");
@@ -104,7 +114,12 @@ public class RecetaLogica {
         }
 
         actualizar(receta);
+    }public void actualizarEstado(Farmaceuta farmaceuta, String recetaId, EstadoReceta nuevoEstado) throws Exception {
+        validarFarmaceuta(farmaceuta);
+        actualizarEstado(recetaId, nuevoEstado);
     }
+
+
     //Clase
     public Receta actualizar(Receta receta) throws Exception {
         validarReceta(receta);
@@ -146,6 +161,30 @@ public class RecetaLogica {
                 .filter(r -> r.getMedico().getId().equalsIgnoreCase(medicoId))
                 .collect(Collectors.toList());
     }
+
+    public List<Receta> listarRecetasPorPaciente(String pacienteId) throws Exception {
+        if (pacienteId == null || pacienteId.trim().isEmpty()) {
+            throw new IllegalArgumentException("El ID del paciente no puede estar vacío");
+        }
+
+        try {
+            return datos.load().getRecetas().stream()
+                    .map(e -> RecetaMapper.fromXML(e, pacienteLogica, medicoLogica, false))
+                    .filter(receta -> receta.getPaciente() != null &&
+                            pacienteId.equals(receta.getPaciente().getId()))
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new Exception("Error al buscar recetas del paciente: " + e.getMessage(), e);
+        }
+
+    }
+
+    private void validarFarmaceuta(Farmaceuta farmaceuta) throws Exception {
+        if (farmaceuta == null) throw new Exception("Solo los farmaceutas pueden ejecutar esta acción.");
+    }
+
+
 
 //    public Receta create(Receta nuevo) throws JAXBException {
 //        RecetaConector data= datos.load();

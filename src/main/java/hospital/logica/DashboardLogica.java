@@ -1,15 +1,14 @@
-package hospital.Intermediaria;
+package hospital.logica;
 
-import hospital.logica.EstadisticaRecetaLogica;
 import hospital.model.Usuario;
 
 import java.time.YearMonth;
 import java.util.LinkedHashMap;
 
-public class DashboardIntermediaria {
+public class DashboardLogica {
     private final EstadisticaRecetaLogica estadistica;
 
-    public DashboardIntermediaria() {
+    public DashboardLogica() {
         this.estadistica = new EstadisticaRecetaLogica();
     }
 

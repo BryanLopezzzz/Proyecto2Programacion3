@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.MedicamentoIntermediaria;
+import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.DetalleReceta;
 import hospital.model.Medicamento;
@@ -24,7 +24,7 @@ public class DetalleRecetaController {
     private String medicamentoId;
 
     // Controller para obtener datos completos del medicamento
-    private final MedicamentoIntermediaria medicamentoIntermediaria = new MedicamentoIntermediaria();
+    private final MedicamentoLogica medicamentoIntermediaria = new MedicamentoLogica();
 
     // Resultado que el padre leerá al cerrar la ventana
     private DetalleReceta detalleCreado;

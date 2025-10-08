@@ -12,7 +12,6 @@ module ProyectoProgramacion3 {
     // JavaFX
     opens hospital.controller to javafx.fxml;
     opens hospital.controller.busqueda to javafx.fxml;
-    opens hospital.Intermediaria to javafx.fxml;
     opens hospital.controller.registro to javafx.fxml;
 
 
@@ -25,8 +24,9 @@ module ProyectoProgramacion3 {
     opens icons to javafx.fxml, javafx.graphics;
 
     exports hospital;
-    exports hospital.Intermediaria;
     exports hospital.model;
     exports hospital.controller;
     exports hospital.controller.busqueda;
+    exports hospital.logica;
+    opens hospital.logica to javafx.fxml;
 }

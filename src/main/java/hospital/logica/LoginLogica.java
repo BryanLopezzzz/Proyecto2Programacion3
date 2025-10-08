@@ -1,13 +1,11 @@
-package hospital.Intermediaria;
+package hospital.logica;
 
-import hospital.logica.Sesion;
 import hospital.model.Usuario;
-import hospital.logica.UsuarioManager;
 
-public class LoginIntermediaria {
+public class LoginLogica {
     private final UsuarioManager usuarioManager;
 
-    public LoginIntermediaria() {
+    public LoginLogica() {
         this.usuarioManager = new UsuarioManager();
     }
 

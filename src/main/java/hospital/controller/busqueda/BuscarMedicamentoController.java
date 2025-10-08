@@ -1,6 +1,6 @@
 package hospital.controller.busqueda;
 
-import hospital.Intermediaria.MedicamentoIntermediaria;
+import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
 import hospital.controller.EditarMedicamentoController;
@@ -37,14 +37,14 @@ public class BuscarMedicamentoController implements Initializable {
     @FXML private Button btnVolver;
     @FXML private Button btnReporte;
 
-    private final MedicamentoIntermediaria medicamentoIntermediaria;
+    private final MedicamentoLogica medicamentoIntermediaria;
     private final Administrador administrador;
     private ObservableList<Medicamento> medicamentos;
     private Medicamento medicamentoSeleccionado;
 
 
     public BuscarMedicamentoController() {
-        this.medicamentoIntermediaria = new MedicamentoIntermediaria();
+        this.medicamentoIntermediaria = new MedicamentoLogica();
         this.administrador = new Administrador();
     }
 

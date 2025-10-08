@@ -6,6 +6,7 @@ import hospital.datos.conector.MedicoConector;
 import hospital.datos.entidades.MedicamentoEntidad;
 import hospital.datos.entidades.MedicoEntidad;
 import hospital.logica.mapper.MedicamentoMapper;
+import hospital.model.Administrador;
 import hospital.model.Medicamento;
 import hospital.model.Medico;
 import jakarta.xml.bind.JAXBContext;
@@ -32,10 +33,20 @@ public class MedicamentoLogica {
         datos.save(conector);
     }
 
+    public void agregar(Administrador admin, Medicamento medicamento) throws Exception {
+        validarAdmin(admin);
+        agregar(medicamento);
+    }
+
     public List<Medicamento> listar() {
         return datos.load().getMedicamentos().stream()
                 .map(MedicamentoMapper::fromXML)   // Convertir cada MedicamentoEntidad a Medicamento
                 .collect(Collectors.toList());
+    }
+
+    public List<Medicamento> listar(Administrador admin) throws Exception {
+        validarAdmin(admin);
+        return listar();
     }
 
     public void modificar(Medicamento medicamento) throws Exception {
@@ -52,6 +63,11 @@ public class MedicamentoLogica {
 
         ordenarPorNombre(con);
         datos.save(con);
+    }
+
+    public void modificar(Administrador admin, Medicamento medicamento) throws Exception {
+        validarAdmin(admin);
+        modificar(medicamento);
     }
 
     private void validarMedicamento(Medicamento m) throws Exception {
@@ -94,6 +110,11 @@ public class MedicamentoLogica {
         return eliminado;
     }
 
+    public void borrar(Administrador admin, String codigo) throws Exception {
+        validarAdmin(admin);
+        eliminar(codigo);
+    }
+
     public Medicamento buscarPorCodigo(String codigo) {
         return datos.load().getMedicamentos().stream()
                 .filter(m -> m.getCodigo().equalsIgnoreCase(codigo))
@@ -102,11 +123,21 @@ public class MedicamentoLogica {
                 .orElse(null);
     }
 
+    public Medicamento buscarPorCodigo(Administrador admin, String codigo) throws Exception {
+        validarAdmin(admin);
+        return buscarPorCodigo(codigo);
+    }
+
     public List<Medicamento> buscarPorNombre(String nombre) {
         return datos.load().getMedicamentos().stream()
                 .map(MedicamentoMapper::fromXML)   // Convertir cada MedicamentoEntidad a Medicamento
                 .filter(m -> m.getNombre().toLowerCase().contains(nombre.toLowerCase()))
                 .collect(Collectors.toList());
+    }
+
+    public List<Medicamento> buscarPorNombre(Administrador admin, String nombre) throws Exception {
+        validarAdmin(admin);
+        return buscarPorNombre(nombre);
     }
 
     public void generarReporte(String rutaReporte) {
@@ -129,6 +160,17 @@ public class MedicamentoLogica {
 
         } catch (Exception e) {
             throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+        }
+    }
+
+    public void generarReporte(Administrador admin, String rutaReporte) throws Exception {
+        validarAdmin(admin);
+        generarReporte(rutaReporte);
+    }
+
+    private void validarAdmin(Administrador admin) throws Exception {
+        if (admin == null) {
+            throw new Exception("Solo los administradores pueden ejecutar esta acción.");
         }
     }
 

@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.LoginIntermediaria;
+import hospital.logica.LoginLogica;
 import hospital.model.Usuario;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -59,7 +59,7 @@ public class CambioClaveController {
     private Button btnVolver;
 
     private Usuario usuario;
-    private LoginIntermediaria loginIntermediaria;
+    private LoginLogica loginLogica;
 
     private final Image eyeIcon = new Image(getClass().getResourceAsStream("/icons/eye.png"));
     private final Image eyeOffIcon = new Image(getClass().getResourceAsStream("/icons/eye-off.png"));
@@ -90,8 +90,8 @@ public class CambioClaveController {
         this.usuario = usuario;
     }
 
-    public void setLoginController(LoginIntermediaria loginIntermediaria) {
-        this.loginIntermediaria = loginIntermediaria;
+    public void setLoginController(LoginLogica loginLogica) {
+        this.loginLogica = loginLogica;
     }
 
     @FXML
@@ -110,7 +110,7 @@ public class CambioClaveController {
         }
 
         try {
-            loginIntermediaria.cambiarClave(actual, nueva);
+            loginLogica.cambiarClave(actual, nueva);
             Alerta.info("Éxito", "Contraseña cambiada correctamente.");
             limpiarCampos();
         } catch (Exception e) {
@@ -133,7 +133,7 @@ public class CambioClaveController {
             // Aquí es importante obtener la instancia correcta del LoginController
             // Si DashboardView lo necesita, hay que pasarlo.
             DashboardController dashboardController = fxmlLoader.getController();
-            dashboardController.setLoginController(this.loginIntermediaria); // Re-establecer el controlador de login
+            dashboardController.setLoginController(this.loginLogica); // Re-establecer el controlador de login
 
             Stage stage = (Stage) btnVolver.getScene().getWindow();
             stage.setScene(scene);

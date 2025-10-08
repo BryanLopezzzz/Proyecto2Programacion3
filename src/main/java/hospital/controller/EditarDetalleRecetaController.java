@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.RecetaIntermediaria;
+import hospital.logica.RecetaLogica;
 import hospital.logica.Sesion;
 import hospital.model.*;
 import javafx.collections.FXCollections;
@@ -22,7 +22,7 @@ public class EditarDetalleRecetaController {
     private Button btnVolver;
 
     private Receta receta;
-    private final RecetaIntermediaria recetaIntermediaria = new RecetaIntermediaria();
+    private final RecetaLogica recetaIntermediaria = new RecetaLogica();
 
     public void initialize() {
         // Cargar todos los estados en el ComboBox

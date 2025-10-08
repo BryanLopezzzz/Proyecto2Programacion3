@@ -1,6 +1,6 @@
 package hospital.controller;
 
-import hospital.Intermediaria.RecetaIntermediaria;
+import hospital.logica.RecetaLogica;
 import hospital.model.*;
 import hospital.controller.busqueda.BuscarPacientePreescripcionController;
 import hospital.controller.busqueda.BuscarMedicamentoPreescripcionController;
@@ -42,7 +42,7 @@ public class PreescribirRecetaController {
     @FXML private Button btnLimpiarTodo;  // Nuevo botón para limpiar manualmente
 
     private ObservableList<DetalleReceta> listaDetalles = FXCollections.observableArrayList();
-    private final RecetaIntermediaria recetaIntermediaria = new RecetaIntermediaria();
+    private final RecetaLogica recetaIntermediaria = new RecetaLogica();
     private Paciente pacienteSeleccionado;
     private Medico medico;
     private Receta recetaActual;

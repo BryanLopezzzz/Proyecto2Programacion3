@@ -9,6 +9,7 @@ import hospital.datos.entidades.PacienteEntidad;
 import hospital.logica.mapper.MedicamentoMapper;
 import hospital.logica.mapper.PacienteMapper;
 import hospital.logica.mapper.RecetaMapper;
+import hospital.model.Administrador;
 import hospital.model.Medicamento;
 import hospital.model.Paciente;
 import hospital.model.Receta;
@@ -33,6 +34,11 @@ public class PacienteLogica {
         PacienteConector conector = datos.load();
         conector.getPacientes().add(PacienteMapper.toXML(paciente));
         datos.save(conector);
+    }
+
+    public void agregar(Administrador admin, Paciente paciente) throws Exception {
+        validarAdmin(admin);
+        agregar(paciente);
     }
 
     public List<Paciente> listar() {
@@ -68,6 +74,11 @@ public class PacienteLogica {
             }
         }
         throw new Exception("No existe paciente con id: " + actualizado.getId());
+    }
+
+    public void modificar(Administrador admin, Paciente medicamento) throws Exception {
+        validarAdmin(admin);
+        actualizar(medicamento);
     }
 
     public boolean eliminar(String id) throws Exception {
@@ -108,6 +119,24 @@ public class PacienteLogica {
             throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
         }
     }
+    public List<Paciente> listar(Administrador admin) throws Exception {
+        validarAdmin(admin);
+        return listar();
+    }
 
+    public void generarReporte(Administrador admin, String rutaReporte) throws Exception {
+        validarAdmin(admin);
+        generarReporte(rutaReporte);
+    }
 
+    public boolean eliminar(Administrador admin, String codigo) throws Exception {
+        validarAdmin(admin);
+        return eliminar(codigo);
+    }
+
+    private void validarAdmin(Administrador admin) throws Exception {
+        if (admin == null) {
+            throw new Exception("Solo los administradores pueden ejecutar esta acción.");
+        }
+    }
 }

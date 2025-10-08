@@ -1,16 +1,16 @@
-package hospital.Intermediaria;
+package hospital.logica;
 
 import hospital.model.EstadoReceta;
 import hospital.model.Receta;
 import hospital.model.Usuario;
-import hospital.logica.RecetaLogica;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class HistoricoRecetasIntermediaria {
+public class HistoricoRecetasLogica {
     private final RecetaLogica recetaLogica;
 
-    public HistoricoRecetasIntermediaria() {
+    public HistoricoRecetasLogica() {
         this.recetaLogica = new RecetaLogica();
     }
 

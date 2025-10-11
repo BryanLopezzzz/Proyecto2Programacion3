@@ -29,4 +29,5 @@ module ProyectoProgramacion3 {
     exports hospital.controller.busqueda;
     exports hospital.logica;
     opens hospital.logica to javafx.fxml;
+    opens hospital.datosDB to org.glassfish.jaxb.core, org.glassfish.jaxb.runtime;
 }

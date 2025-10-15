@@ -176,24 +176,16 @@ public class BuscarPacienteController {
     }
 
     @FXML
-    public void GenerarReporte(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Guardar Reporte de Pacientes");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos XML", "*.xml")
-        );
-        fileChooser.setInitialFileName("reporte_pacientes.xml");
+    public void GenerarReporte() {
+        try {
+            List<Paciente> reporte = pacienteIntermediaria.generarReporte(admin);
 
-        Stage stage = (Stage) btnReporte.getScene().getWindow();
-        File archivo = fileChooser.showSaveDialog(stage);
+            tblPacientes.getItems().setAll(reporte);
 
-        if (archivo != null) {
-            try {
-                pacienteIntermediaria.generarReporte(admin, archivo.getAbsolutePath());
-                mostrarInfo("Reporte generado exitosamente en: " + archivo.getAbsolutePath());
-            } catch (Exception e) {
-                mostrarError("Error al generar reporte: " + e.getMessage());
-            }
+            mostrarInfo( "Reporte generado correctamente desde la base de datos.");
+
+        } catch (Exception e) {
+            mostrarError("Error al generar reporte: " + e.getMessage());
         }
     }
 

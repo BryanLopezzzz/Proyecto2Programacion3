@@ -191,28 +191,30 @@ public class BuscarMedicamentoController implements Initializable {
 
     @FXML
     private void GenerarReporte() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Guardar Reporte de Medicamentos");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos XML", "*.xml")
-        );
-        fileChooser.setInitialFileName("reporte_medicamentos.xml");
+        try {
+            List<Medicamento> reporte = medicamentoIntermediaria.generarReporte(administrador);
 
-        Stage stage = (Stage) btnReporte.getScene().getWindow();
-        File archivo = fileChooser.showSaveDialog(stage);
+            medicamentos.clear();
+            medicamentos.addAll(reporte);
 
-        if (archivo != null) {
-            try {
-                medicamentoIntermediaria.generarReporte(administrador, archivo.getAbsolutePath());
-            } catch (Exception e) {
-                mostrarError("Error al generar reporte: " + e.getMessage());
-            }
+            mostrarInfo("Reporte generado correctamente.");
+
+        } catch (Exception e) {
+            mostrarError("Error al generar reporte: " + e.getMessage());
         }
     }
 
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
+
+    private void mostrarInfo(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Información");
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();

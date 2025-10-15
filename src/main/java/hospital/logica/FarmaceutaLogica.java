@@ -1,57 +1,23 @@
 package hospital.logica;
 
-import java.io.File;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import hospital.datos.conector.MedicamentoConector;
-import hospital.datos.conector.PacienteConector;
-import hospital.logica.mapper.PacienteMapper;
+import hospital.datos.FarmaceutaDatos;
 import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
-import hospital.datos.FarmaceutaDatos;
-import hospital.datos.conector.FarmaceutaConector;
-import hospital.datos.entidades.FarmaceutaEntidad;
-import hospital.logica.mapper.FarmaceutaMapper;
-import hospital.model.Paciente;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.Marshaller;
+
+import java.sql.SQLException;
+import java.util.List;
 
 public class FarmaceutaLogica {
     private final FarmaceutaDatos datos;
 
     public FarmaceutaLogica() {
-        this.datos = new FarmaceutaDatos("data/farmaceutas.xml");
+        this.datos = new FarmaceutaDatos();
     }
 
-    public void agregar(Farmaceuta farmaceuta) throws Exception {
-        validarAlta(farmaceuta);
+    // --------- Lectura ---------
 
-        FarmaceutaConector con = datos.load();
-
-        boolean existe = con.getFarmaceutas().stream()
-                .anyMatch(f -> f.getId().equalsIgnoreCase(farmaceuta.getId()));
-        if (existe) throw new Exception("Ya existe un farmaceuta con id: " + farmaceuta.getId());
-
-        // Regla: clave = id al agregar
-        farmaceuta.setClave(farmaceuta.getId());
-
-        con.getFarmaceutas().add(FarmaceutaMapper.toXML(farmaceuta));
-        ordenarPorNombre(con);
-        datos.save(con);
-    }
-
-    public void agregar(Administrador admin, Farmaceuta f) throws Exception {
-        validarAdmin(admin);
-        agregar(f);
-    }
-
-    public List<Farmaceuta> listar() {
-        return datos.load().getFarmaceutas().stream()
-                .map(FarmaceutaMapper::fromXML)
-                .collect(Collectors.toList());
+    public List<Farmaceuta> listar() throws SQLException {
+        return datos.listarTodos();
     }
 
     public List<Farmaceuta> listar(Administrador admin) throws Exception {
@@ -59,92 +25,9 @@ public class FarmaceutaLogica {
         return listar();
     }
 
-    public void modificar(Farmaceuta farmaceuta) throws Exception {
-        validarModificacion(farmaceuta);
-
-        FarmaceutaConector con = datos.load();
-        FarmaceutaEntidad actual = con.getFarmaceutas().stream()
-                .filter(f -> f.getId().equalsIgnoreCase(farmaceuta.getId()))
-                .findFirst()
-                .orElseThrow(() -> new Exception("No existe farmaceuta con id: " + farmaceuta.getId()));
-
-        actual.setNombre(farmaceuta.getNombre());
-        // La clave no se cambia aquí, solo desde el módulo de login/cambio clave.
-
-        ordenarPorNombre(con);
-        datos.save(con);
-    }
-
-    public void modificar(Administrador admin, Farmaceuta f) throws Exception {
-        validarAdmin(admin);
-        modificar(f);
-    }
-
-    private void validarAlta(Farmaceuta f) throws Exception {
-        if (f == null) throw new Exception("El farmaceuta no puede ser nulo.");
-        if (f.getId() == null || f.getId().isBlank()) throw new Exception("El id es obligatorio.");
-        if (f.getNombre() == null || f.getNombre().isBlank()) throw new Exception("El nombre es obligatorio.");
-    }
-
-    private void validarModificacion(Farmaceuta f) throws Exception {
-        if (f == null) throw new Exception("El farmaceuta no puede ser nulo.");
-        if (f.getId() == null || f.getId().isBlank()) throw new Exception("El id es obligatorio.");
-        if (f.getNombre() == null || f.getNombre().isBlank()) throw new Exception("El nombre es obligatorio.");
-    }
-
-    private void ordenarPorNombre(FarmaceutaConector con) {
-        con.getFarmaceutas().sort(Comparator.comparing(
-                e -> Objects.toString(e.getNombre(), ""), String.CASE_INSENSITIVE_ORDER
-        ));
-    }
-
-    //Clase
-    public Farmaceuta actualizar(Farmaceuta actualizado) throws Exception {
-        validarModificacion(actualizado);
-
-        FarmaceutaConector data = datos.load();
-        for (int i = 0; i < data.getFarmaceutas().size(); i++) {
-            FarmaceutaEntidad actual = data.getFarmaceutas().get(i);
-
-            if (actual.getId().equalsIgnoreCase(actualizado.getId())) {
-                data.getFarmaceutas().set(i, FarmaceutaMapper.toXML(actualizado));
-                datos.save(data);
-                return actualizado;
-            }
-        }
-        throw new Exception("No existe farmaceuta con id: " + actualizado.getId());
-    }
-
-    public boolean eliminar(String id) throws Exception {
-        FarmaceutaConector conector = datos.load();
-        boolean eliminado = conector.getFarmaceutas().removeIf(f -> f.getId().equalsIgnoreCase(id));
-        if (eliminado) {
-            datos.save(conector);
-        }
-        return eliminado;
-    }
-
-    public void borrar(Administrador admin, String id) throws Exception {
-        validarAdmin(admin);
-        eliminar(id);
-    }
-
-    public Farmaceuta buscarPorId(String id) {
-        if (id == null) return null;
-        return datos.load().getFarmaceutas().stream()
-                .filter(f -> f.getId().equalsIgnoreCase(id))
-                .map(FarmaceutaMapper::fromXML)
-                .findFirst()
-                .orElse(null);
-    }
-
-    public List<Farmaceuta> buscarPorNombre(String nombre) {
-        if (nombre == null) nombre = "";
-        final String q = nombre.toLowerCase();
-        return datos.load().getFarmaceutas().stream()
-                .filter(f -> f.getNombre() != null && f.getNombre().toLowerCase().contains(q))
-                .map(FarmaceutaMapper::fromXML)
-                .collect(Collectors.toList());
+    public Farmaceuta buscarPorId(String id) throws SQLException {
+        if (id == null || id.isBlank()) return null;
+        return datos.buscarPorId(id);
     }
 
     public Farmaceuta buscarPorId(Administrador admin, String id) throws Exception {
@@ -152,37 +35,100 @@ public class FarmaceutaLogica {
         return buscarPorId(id);
     }
 
+    public List<Farmaceuta> buscarPorNombre(String nombre) throws SQLException {
+        if (nombre == null) nombre = "";
+        String q = nombre.toLowerCase();
+        return datos.listarTodos().stream()
+                .filter(f -> f.getNombre() != null && f.getNombre().toLowerCase().contains(q))
+                .toList();
+    }
+
     public List<Farmaceuta> buscarPorNombre(Administrador admin, String nombre) throws Exception {
         validarAdmin(admin);
         return buscarPorNombre(nombre);
     }
 
-    public void generarReporte(String rutaReporte) {
-        try {
-            // Obtener todos los pacietnes
-            List<Farmaceuta> lista = listar();
+    public List<Farmaceuta> generarReporte(Administrador admin) throws Exception {
+        validarAdmin(admin);
 
-            // Mapearlos a entidades XML
-            FarmaceutaConector conector = new  FarmaceutaConector();
-            for ( Farmaceuta m : lista) {
-                conector.getFarmaceutas().add(FarmaceutaMapper.toXML(m));
-            }
+        return listar();
+    }
 
-            JAXBContext context = JAXBContext.newInstance(MedicamentoConector.class);
-            Marshaller marshaller = context.createMarshaller();
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-            marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
 
-            marshaller.marshal(conector, new File(rutaReporte));
+    // --------- Escritura ---------
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+    public void agregar(Farmaceuta farmaceuta) throws Exception {
+        validarAlta(farmaceuta);
+
+        // Verificar unicidad
+        if (datos.buscarPorId(farmaceuta.getId()) != null) {
+            throw new Exception("Ya existe un farmaceuta con id: " + farmaceuta.getId());
+        }
+
+        // Regla: clave = id al agregar
+        farmaceuta.setClave(farmaceuta.getId());
+
+        if (!datos.insert(farmaceuta)) {
+            throw new Exception("No se pudo agregar el farmaceuta");
         }
     }
 
-    public void generarReporte(Administrador admin, String rutaReporte) throws Exception {
+    public void agregar(Administrador admin, Farmaceuta f) throws Exception {
         validarAdmin(admin);
-        generarReporte(rutaReporte);
+        agregar(f);
+    }
+
+    public Farmaceuta actualizar(Farmaceuta farmaceuta) throws Exception {
+        validarModificacion(farmaceuta);
+
+        if (datos.buscarPorId(farmaceuta.getId()) == null) {
+            throw new Exception("No existe farmaceuta con id: " + farmaceuta.getId());
+        }
+
+        if (!datos.update(farmaceuta)) {
+            throw new Exception("No se pudo actualizar el farmaceuta");
+        }
+
+        return farmaceuta;
+    }
+
+    public void modificar(Farmaceuta farmaceuta) throws Exception {
+        actualizar(farmaceuta);
+    }
+
+    public void modificar(Administrador admin, Farmaceuta f) throws Exception {
+        validarAdmin(admin);
+        modificar(f);
+    }
+
+    public boolean eliminar(String id) throws Exception {
+        if (id == null || id.isBlank()) {
+            throw new Exception("El ID es obligatorio");
+        }
+        return datos.delete(id);
+    }
+
+    public void borrar(Administrador admin, String id) throws Exception {
+        validarAdmin(admin);
+        eliminar(id);
+    }
+
+    // --------- Validaciones ---------
+
+    private void validarAlta(Farmaceuta f) throws Exception {
+        if (f == null) throw new Exception("El farmaceuta no puede ser nulo.");
+        if (f.getId() == null || f.getId().isBlank())
+            throw new Exception("El id es obligatorio.");
+        if (f.getNombre() == null || f.getNombre().isBlank())
+            throw new Exception("El nombre es obligatorio.");
+    }
+
+    private void validarModificacion(Farmaceuta f) throws Exception {
+        if (f == null) throw new Exception("El farmaceuta no puede ser nulo.");
+        if (f.getId() == null || f.getId().isBlank())
+            throw new Exception("El id es obligatorio.");
+        if (f.getNombre() == null || f.getNombre().isBlank())
+            throw new Exception("El nombre es obligatorio.");
     }
 
     private void validarAdmin(Administrador admin) throws Exception {

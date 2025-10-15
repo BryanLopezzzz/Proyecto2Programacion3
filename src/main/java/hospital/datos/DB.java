@@ -1,4 +1,4 @@
-package hospital.datosDB;
+package hospital.datos;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.InputStream;

@@ -1,60 +1,179 @@
 package hospital.datos;
 
-import jakarta.xml.bind.*;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import hospital.model.*;
+
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Objects;
-import hospital.datos.entidades.RecetaEntidad;
-import hospital.datos.conector.RecetaConector;
+import java.util.List;
 
-public class RecetaDatos {
-    private final Path path;
-    private final JAXBContext context;
-    private RecetaConector cache;
+public class RecetaDatos implements Plantilla {
 
-    public RecetaDatos(String filePath) {
-        try {
-            this.path = Path.of(Objects.requireNonNull(filePath));
-            this.context = JAXBContext.newInstance(RecetaConector.class, RecetaEntidad.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+    @Override
+    public boolean insert(Object obj) throws SQLException {
+        if (!(obj instanceof Receta receta)) return false;
+
+        String sql = """
+                INSERT INTO receta (id, paciente_id, medico_id, fecha, fecha_retiro, estado)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """;
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, receta.getId());
+            ps.setString(2, receta.getPaciente().getId());
+            ps.setString(3, receta.getMedico().getId());
+            ps.setDate(4, Date.valueOf(receta.getFecha()));
+            ps.setDate(5, Date.valueOf(receta.getFechaRetiro()));
+            ps.setString(6, receta.getEstado().name());
+
+            return ps.executeUpdate() > 0;
         }
     }
 
-    public synchronized RecetaConector load() {
-        try {
-            if (Files.notExists(path)) {
-                RecetaConector nuevo = new RecetaConector();
-                save(nuevo);
-                return nuevo;
+    @Override
+    public boolean update(Object obj) throws SQLException {
+        if (!(obj instanceof Receta receta)) return false;
+
+        String sql = "UPDATE receta SET fecha_retiro = ?, estado = ? WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setDate(1, Date.valueOf(receta.getFechaRetiro()));
+            ps.setString(2, receta.getEstado().name());
+            ps.setString(3, receta.getId());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean delete(String id) throws SQLException {
+        String sql = "DELETE FROM receta WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean findById(int id) throws SQLException {
+        String sql = "SELECT id FROM receta WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, String.valueOf(id));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
-            Unmarshaller u = context.createUnmarshaller();
-            RecetaConector data = (RecetaConector) u.unmarshal(path.toFile());
-            if (data.getRecetas() == null) data.setRecetas(new ArrayList<>());
-            return data;
-        } catch (Exception e) {
-            throw new RuntimeException("Error cargando recetas: " + e.getMessage(), e);
         }
     }
 
-    public synchronized void save(RecetaConector data) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+    @Override
+    public List<Object> findAll() throws SQLException {
+        String sql = "SELECT * FROM receta ORDER BY id";
+        List<Object> lista = new ArrayList<>();
 
-        File out = path.toFile();
-        File parent = out.getParentFile();
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-        if(parent != null){
-            parent.mkdirs();
+            while (rs.next()) {
+                Receta receta = new Receta();
+                receta.setId(rs.getString("id"));
+
+                Paciente paciente = new Paciente();
+                paciente.setId(rs.getString("paciente_id"));
+                receta.setPaciente(paciente);
+
+                Medico medico = new Medico();
+                medico.setId(rs.getString("medico_id"));
+                receta.setMedico(medico);
+
+                receta.setFecha(rs.getDate("fecha").toLocalDate());
+                receta.setFechaRetiro(rs.getDate("fecha_retiro").toLocalDate());
+                receta.setEstado(EstadoReceta.valueOf(rs.getString("estado")));
+
+                lista.add(receta);
+            }
         }
-
-        java.io.StringWriter sw = new java.io.StringWriter();
-        m.marshal(data, sw);
-        m.marshal(data,out);
+        return lista;
     }
 
-    public Path getPath() { return path; }
+    public List<Receta> listarRecetasPorPaciente(String idPaciente) throws SQLException {
+        List<Receta> recetas = new ArrayList<>();
+
+        String sql = "SELECT * FROM receta WHERE idPaciente = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, idPaciente);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Receta receta = new Receta();
+
+                    receta.setId(rs.getString("id"));
+                    receta.setFecha(rs.getDate("fecha").toLocalDate());
+                    receta.setEstado(EstadoReceta.valueOf(rs.getString("estado")));
+
+                    // Evita null en fechaRetiro
+                    Date fechaRetiroSql = rs.getDate("fechaRetiro");
+                    if (fechaRetiroSql != null) {
+                        receta.setFechaRetiro(fechaRetiroSql.toLocalDate());
+                    }
+
+                    Paciente paciente = new Paciente();
+                    paciente.setId(rs.getString("idPaciente"));
+                    receta.setPaciente(paciente);
+
+                    // Crear Médico solo con ID
+                    Medico medico = new Medico();
+                    medico.setId(rs.getString("idMedico"));
+                    receta.setMedico(medico);
+
+                    // Cargar detalles asociados
+                    List<DetalleReceta> detalles = listarDetallesPorReceta(receta.getId());
+                    receta.setDetalles(detalles);
+
+                    recetas.add(receta);
+                }
+            }
+        }
+
+        return recetas;
+    }
+
+    private List<DetalleReceta> listarDetallesPorReceta(String idReceta) throws SQLException {
+        List<DetalleReceta> detalles = new ArrayList<>();
+
+        String sql = "SELECT * FROM detalle_receta WHERE idReceta = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, idReceta);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    DetalleReceta detalle = new DetalleReceta();
+
+                    // Crear medicamento básico
+                    Medicamento medicamento = new Medicamento();
+                    medicamento.setCodigo(rs.getString("idMedicamento"));
+
+                    medicamento.setNombre(rs.getString("nombreMedicamento"));
+                    medicamento.setPresentacion(rs.getString("presentacion"));
+
+                    detalle.setMedicamento(medicamento);
+                    detalle.setCantidad(rs.getInt("cantidad"));
+                    detalle.setIndicaciones(rs.getString("indicaciones"));
+                    detalle.setDiasTratamiento(rs.getInt("diasTratamiento"));
+
+                    detalles.add(detalle);
+                }
+            }
+        }
+
+        return detalles;
+    }
+
 }

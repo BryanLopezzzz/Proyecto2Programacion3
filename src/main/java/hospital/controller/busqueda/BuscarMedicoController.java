@@ -165,23 +165,17 @@ public class BuscarMedicoController {
 
     @FXML
     public void GenerarReporte(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Guardar Reporte de Médicos");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos XML", "*.xml")
-        );
-        fileChooser.setInitialFileName("reporte_medicos.xml");
+        try {
+            // Obtener todos los médicos desde la base de datos
+            List<Medico> reporte = medicoIntermediaria.generarReporte(admin);
 
-        Stage stage = (Stage) btnReporte.getScene().getWindow();
-        File archivo = fileChooser.showSaveDialog(stage);
+            // Actualizar la tabla si tienes TableView, por ejemplo:
+            tblMedicos.getItems().setAll(reporte);
 
-        if (archivo != null) {
-            try {
-                medicoIntermediaria.generarReporte(admin, archivo.getAbsolutePath());
-                mostrarInfo("Reporte generado exitosamente en: " + archivo.getAbsolutePath());
-            } catch (Exception e) {
-                mostrarError("Error al generar reporte: " + e.getMessage());
-            }
+            mostrarInfo("Reporte generado correctamente desde la base de datos.");
+
+        } catch (Exception e) {
+            mostrarError("Error al generar reporte: " + e.getMessage());
         }
     }
 

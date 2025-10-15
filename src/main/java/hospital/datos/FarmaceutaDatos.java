@@ -1,68 +1,124 @@
 package hospital.datos;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
-import jakarta.xml.bind.Unmarshaller;
-import hospital.datos.conector.FarmaceutaConector;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import hospital.datos.entidades.FarmaceutaEntidad;
+import hospital.model.Farmaceuta;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class FarmaceutaDatos {
-    private final Path path;
-    private final JAXBContext context;
-    private FarmaceutaConector cache;
+public class FarmaceutaDatos implements Plantilla {
 
-    public FarmaceutaDatos(String filePath) {
-        try {
-            this.path = Path.of(Objects.requireNonNull(filePath));
-            this.context = JAXBContext.newInstance(FarmaceutaConector.class, FarmaceutaEntidad.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Error inicializando FarmaceutaDatos: " + e.getMessage(), e);
+    @Override
+    public boolean insert(Object obj) throws SQLException {
+        if (!(obj instanceof Farmaceuta farmaceuta)) return false;
+
+        String sql = "INSERT INTO farmaceuta (id, clave, nombre) VALUES (?, ?, ?)";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, farmaceuta.getId());
+            ps.setString(2, farmaceuta.getClave());
+            ps.setString(3, farmaceuta.getNombre());
+
+            return ps.executeUpdate() > 0;
         }
     }
 
-    public synchronized FarmaceutaConector load() {
-        try {
-            if (cache != null) return cache;
+    @Override
+    public boolean update(Object obj) throws SQLException {
+        if (!(obj instanceof Farmaceuta farmaceuta)) return false;
 
-            if (Files.notExists(path)) {
-                cache = new FarmaceutaConector();
-                save(cache);
-                return cache;
+        String sql = "UPDATE farmaceuta SET clave = ?, nombre = ? WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, farmaceuta.getClave());
+            ps.setString(2, farmaceuta.getNombre());
+            ps.setString(3, farmaceuta.getId());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean delete(String id) throws SQLException {
+        String sql = "DELETE FROM farmaceuta WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, String.valueOf(id));
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean findById(int id) throws SQLException {
+        String sql = "SELECT * FROM farmaceuta WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, String.valueOf(id));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
+        }
+    }
 
-            Unmarshaller u = context.createUnmarshaller();
-            cache = (FarmaceutaConector) u.unmarshal(path.toFile());
+    @Override
+    public List<Object> findAll() throws SQLException {
+        String sql = "SELECT * FROM farmaceuta ORDER BY id";
+        List<Object> lista = new ArrayList<>();
 
-            if (cache.getFarmaceutas() == null) {
-                cache.setFarmaceutas(new java.util.ArrayList<>());
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Farmaceuta f = new Farmaceuta(
+                        rs.getString("id"),
+                        rs.getString("clave"),
+                        rs.getString("nombre")
+                );
+                lista.add(f);
             }
-            return cache;
-        } catch (Exception e) {
-            throw new RuntimeException("Error cargando farmaceutas: " + e.getMessage(), e);
         }
+        return lista;
     }
 
-    public synchronized void save(FarmaceutaConector data) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+    // --- Métodos auxiliares más específicos (opcionales y útiles) ---
 
-        File out = path.toFile();
-        File parent = out.getParentFile();
-
-        if(parent != null){
-            parent.mkdirs();
+    public Farmaceuta buscarPorId(String id) throws SQLException {
+        String sql = "SELECT * FROM farmaceuta WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Farmaceuta(
+                            rs.getString("id"),
+                            rs.getString("clave"),
+                            rs.getString("nombre")
+                    );
+                }
+            }
         }
-
-        java.io.StringWriter sw = new java.io.StringWriter();
-        m.marshal(data, sw);
-        m.marshal(data,out);
+        return null;
     }
 
-    public Path getPath() { return path; }
+    public List<Farmaceuta> listarTodos() throws SQLException {
+        String sql = "SELECT * FROM farmaceuta ORDER BY id";
+        List<Farmaceuta> lista = new ArrayList<>();
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                lista.add(new Farmaceuta(
+                        rs.getString("id"),
+                        rs.getString("clave"),
+                        rs.getString("nombre")
+                ));
+            }
+        }
+        return lista;
+    }
 }

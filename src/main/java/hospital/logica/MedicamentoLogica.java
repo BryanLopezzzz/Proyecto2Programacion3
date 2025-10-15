@@ -1,47 +1,27 @@
 package hospital.logica;
 
 import hospital.datos.MedicamentoDatos;
-import hospital.datos.conector.MedicamentoConector;
-import hospital.datos.conector.MedicoConector;
-import hospital.datos.entidades.MedicamentoEntidad;
-import hospital.datos.entidades.MedicoEntidad;
-import hospital.logica.mapper.MedicamentoMapper;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
-import hospital.model.Medico;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.Marshaller;
 
-import java.io.File;
-import java.util.Comparator;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class MedicamentoLogica {
     private final MedicamentoDatos datos;
 
     public MedicamentoLogica() {
-        this.datos = new MedicamentoDatos("data/medicamentos.xml");
+        this.datos = new MedicamentoDatos();
     }
 
-    public void agregar(Medicamento medicamento) throws Exception {
-        validarMedicamento(medicamento);
+    // --------- Lectura ---------
 
-        MedicamentoConector conector = datos.load();
-        conector.getMedicamentos().add(MedicamentoMapper.toXML(medicamento));
-        datos.save(conector);
-    }
-
-    public void agregar(Administrador admin, Medicamento medicamento) throws Exception {
-        validarAdmin(admin);
-        agregar(medicamento);
-    }
-
-    public List<Medicamento> listar() {
-        return datos.load().getMedicamentos().stream()
-                .map(MedicamentoMapper::fromXML)   // Convertir cada MedicamentoEntidad a Medicamento
-                .collect(Collectors.toList());
+    public List<Medicamento> listar() throws SQLException {
+        List<Object> objetos = datos.findAll();
+        return objetos.stream()
+                .filter(obj -> obj instanceof Medicamento)
+                .map(obj -> (Medicamento) obj)
+                .toList();
     }
 
     public List<Medicamento> listar(Administrador admin) throws Exception {
@@ -49,76 +29,12 @@ public class MedicamentoLogica {
         return listar();
     }
 
-    public void modificar(Medicamento medicamento) throws Exception {
-        validarMedicamento(medicamento);
+    public Medicamento buscarPorCodigo(String codigo) throws SQLException {
+        if (codigo == null || codigo.isBlank()) return null;
 
-        MedicamentoConector con = datos.load();
-        MedicamentoEntidad actual = con.getMedicamentos().stream()
-                .filter(m -> m.getCodigo().equalsIgnoreCase(medicamento.getCodigo()))
-                .findFirst()
-                .orElseThrow();
-
-        actual.setNombre(medicamento.getNombre());
-        actual.setPresentacion(medicamento.getPresentacion());
-
-        ordenarPorNombre(con);
-        datos.save(con);
-    }
-
-    public void modificar(Administrador admin, Medicamento medicamento) throws Exception {
-        validarAdmin(admin);
-        modificar(medicamento);
-    }
-
-    private void validarMedicamento(Medicamento m) throws Exception {
-        if (m == null) throw new Exception("El medicamento no puede ser nulo.");
-        if (m.getCodigo() == null || m.getCodigo().isBlank()) throw new Exception("El código es obligatorio.");
-        if (m.getNombre() == null || m.getNombre().isBlank()) throw new Exception("El nombre es obligatorio.");
-        if (m.getPresentacion() == null || m.getPresentacion().isBlank()) throw new Exception("La presentación es obligatoria.");
-    }
-
-    private void ordenarPorNombre(MedicamentoConector con) {
-        con.getMedicamentos().sort(Comparator.comparing(
-                e -> Objects.toString(e.getNombre(), ""), String.CASE_INSENSITIVE_ORDER
-        ));
-    }
-
-    //Clase
-
-    public Medicamento actualizar(Medicamento actualizado) throws Exception {
-        validarMedicamento(actualizado);
-
-        MedicamentoConector data = datos.load();
-        for (int i = 0; i < data.getMedicamentos().size(); i++) {
-            var actual = data.getMedicamentos().get(i);
-
-            if (actual.getCodigo().equalsIgnoreCase(actualizado.getCodigo())) {
-                data.getMedicamentos().set(i, MedicamentoMapper.toXML(actualizado));
-                datos.save(data);
-                return actualizado;
-            }
-        }
-        throw new Exception("No existe medicamento con código: " + actualizado.getCodigo());
-    }
-
-    public boolean eliminar(String codigo) throws Exception {
-        MedicamentoConector conector = datos.load();
-        boolean eliminado = conector.getMedicamentos().removeIf(r -> r.getCodigo().equalsIgnoreCase(codigo));
-        if (eliminado) {
-            datos.save(conector);
-        }
-        return eliminado;
-    }
-
-    public void borrar(Administrador admin, String codigo) throws Exception {
-        validarAdmin(admin);
-        eliminar(codigo);
-    }
-
-    public Medicamento buscarPorCodigo(String codigo) {
-        return datos.load().getMedicamentos().stream()
+        List<Medicamento> todos = listar();
+        return todos.stream()
                 .filter(m -> m.getCodigo().equalsIgnoreCase(codigo))
-                .map(MedicamentoMapper::fromXML)
                 .findFirst()
                 .orElse(null);
     }
@@ -128,11 +44,12 @@ public class MedicamentoLogica {
         return buscarPorCodigo(codigo);
     }
 
-    public List<Medicamento> buscarPorNombre(String nombre) {
-        return datos.load().getMedicamentos().stream()
-                .map(MedicamentoMapper::fromXML)   // Convertir cada MedicamentoEntidad a Medicamento
-                .filter(m -> m.getNombre().toLowerCase().contains(nombre.toLowerCase()))
-                .collect(Collectors.toList());
+    public List<Medicamento> buscarPorNombre(String nombre) throws SQLException {
+        if (nombre == null) nombre = "";
+        String q = nombre.toLowerCase();
+        return listar().stream()
+                .filter(m -> m.getNombre() != null && m.getNombre().toLowerCase().contains(q))
+                .toList();
     }
 
     public List<Medicamento> buscarPorNombre(Administrador admin, String nombre) throws Exception {
@@ -140,32 +57,83 @@ public class MedicamentoLogica {
         return buscarPorNombre(nombre);
     }
 
-    public void generarReporte(String rutaReporte) {
-        try {
-            // Obtener todos los medicamentos
-            List<Medicamento> lista = listar();
+    // --------- Escritura ---------
 
-            // Mapearlos a entidades XML
-            MedicamentoConector conector = new MedicamentoConector();
-            for (Medicamento m : lista) {
-                conector.getMedicamentos().add(MedicamentoMapper.toXML(m));
-            }
+    public void agregar(Medicamento medicamento) throws Exception {
+        validarMedicamento(medicamento);
 
-            JAXBContext context = JAXBContext.newInstance(MedicamentoConector.class);
-            Marshaller marshaller = context.createMarshaller();
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-            marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+        // Verificar unicidad
+        if (buscarPorCodigo(medicamento.getCodigo()) != null) {
+            throw new Exception("Ya existe un medicamento con código: " + medicamento.getCodigo());
+        }
 
-            marshaller.marshal(conector, new File(rutaReporte));
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+        if (!datos.insert(medicamento)) {
+            throw new Exception("No se pudo agregar el medicamento");
         }
     }
 
-    public void generarReporte(Administrador admin, String rutaReporte) throws Exception {
+    public void agregar(Administrador admin, Medicamento medicamento) throws Exception {
         validarAdmin(admin);
-        generarReporte(rutaReporte);
+        agregar(medicamento);
+    }
+
+    public Medicamento actualizar(Medicamento medicamento) throws Exception {
+        validarMedicamento(medicamento);
+
+        if (buscarPorCodigo(medicamento.getCodigo()) == null) {
+            throw new Exception("No existe medicamento con código: " + medicamento.getCodigo());
+        }
+
+        if (!datos.update(medicamento)) {
+            throw new Exception("No se pudo actualizar el medicamento");
+        }
+
+        return medicamento;
+    }
+
+    public void modificar(Medicamento medicamento) throws Exception {
+        actualizar(medicamento);
+    }
+
+    public void modificar(Administrador admin, Medicamento medicamento) throws Exception {
+        validarAdmin(admin);
+        modificar(medicamento);
+    }
+
+    public boolean eliminar(String codigo) throws Exception {
+        if (codigo == null || codigo.isBlank()) {
+            throw new Exception("El código es obligatorio");
+        }
+
+        // Convertir código a int para la interfaz (aunque es String en la tabla)
+        // Esta es una limitación de la interfaz Plantilla
+        try {
+            return datos.delete(codigo);
+        } catch (NumberFormatException e) {
+            throw new Exception("Código de medicamento inválido");
+        }
+    }
+
+    public void borrar(Administrador admin, String codigo) throws Exception {
+        validarAdmin(admin);
+        eliminar(codigo);
+    }
+
+    public List<Medicamento> generarReporte(Administrador admin) throws Exception {
+        validarAdmin(admin);
+        return listar();
+    }
+
+    // --------- Validaciones ---------
+
+    private void validarMedicamento(Medicamento m) throws Exception {
+        if (m == null) throw new Exception("El medicamento no puede ser nulo.");
+        if (m.getCodigo() == null || m.getCodigo().isBlank())
+            throw new Exception("El código es obligatorio.");
+        if (m.getNombre() == null || m.getNombre().isBlank())
+            throw new Exception("El nombre es obligatorio.");
+        if (m.getPresentacion() == null || m.getPresentacion().isBlank())
+            throw new Exception("La presentación es obligatoria.");
     }
 
     private void validarAdmin(Administrador admin) throws Exception {
@@ -173,5 +141,4 @@ public class MedicamentoLogica {
             throw new Exception("Solo los administradores pueden ejecutar esta acción.");
         }
     }
-
 }

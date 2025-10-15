@@ -68,6 +68,9 @@ public class Receta {
     public List<DetalleReceta> getDetalles() {
         return detalles;
     }
+    public void setDetalles(List<DetalleReceta> detalles) {
+        this.detalles = detalles;
+    }
 
     public void agregarDetalle(DetalleReceta detalle) {
         detalles.add(detalle);

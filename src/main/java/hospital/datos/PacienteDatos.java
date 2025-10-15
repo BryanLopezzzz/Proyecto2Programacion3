@@ -1,65 +1,89 @@
 package hospital.datos;
 
-import jakarta.xml.bind.*;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import hospital.datos.conector.PacienteConector;
-import hospital.datos.entidades.PacienteEntidad;
+import hospital.model.Paciente;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class PacienteDatos {
-    private final Path path;
-    private final JAXBContext context;
-    private PacienteConector cache;
+public class PacienteDatos implements Plantilla {
 
-    public PacienteDatos(String filePath) {
-        try {
-            this.path = Path.of(Objects.requireNonNull(filePath));
-            this.context = JAXBContext.newInstance(PacienteConector.class, PacienteEntidad.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+    @Override
+    public boolean insert(Object obj) throws SQLException {
+        if (!(obj instanceof Paciente paciente)) return false;
+
+        String sql = "INSERT INTO paciente (id, nombre, fecha_nacimiento, telefono) VALUES (?, ?, ?, ?)";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, paciente.getId());
+            ps.setString(2, paciente.getNombre());
+            ps.setDate(3, Date.valueOf(paciente.getFechaNacimiento()));
+            ps.setString(4, paciente.getTelefono());
+
+            return ps.executeUpdate() > 0;
         }
     }
 
-    public synchronized PacienteConector load() {
-        try {
-            if (cache != null) return cache;
+    @Override
+    public boolean update(Object obj) throws SQLException {
+        if (!(obj instanceof Paciente paciente)) return false;
 
-            if (Files.notExists(path)) {
-                cache = new PacienteConector();
-                save(cache);
-                return cache;
+        String sql = "UPDATE paciente SET nombre = ?, fecha_nacimiento = ?, telefono = ? WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, paciente.getNombre());
+            ps.setDate(2, Date.valueOf(paciente.getFechaNacimiento()));
+            ps.setString(3, paciente.getTelefono());
+            ps.setString(4, paciente.getId());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean delete(String id) throws SQLException {
+        String sql = "DELETE FROM paciente WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean findById(int id) throws SQLException {
+        String sql = "SELECT * FROM paciente WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, String.valueOf(id));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
+        }
+    }
 
-            Unmarshaller u = context.createUnmarshaller();
-            cache = (PacienteConector) u.unmarshal(path.toFile());
+    @Override
+    public List<Object> findAll() throws SQLException {
+        String sql = "SELECT * FROM paciente ORDER BY id";
+        List<Object> lista = new ArrayList<>();
 
-            if (cache.getPacientes() == null) {
-                cache.setPacientes(new java.util.ArrayList<>());
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Paciente p = new Paciente(
+                        rs.getString("id"),
+                        rs.getString("nombre"),
+                        rs.getDate("fecha_nacimiento").toLocalDate(),
+                        rs.getString("telefono")
+                );
+                lista.add(p);
             }
-            return cache;
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
         }
+        return lista;
     }
-
-    public synchronized void save(PacienteConector data) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
-
-        File out = path.toFile();
-        File parent = out.getParentFile();
-
-        if(parent != null){
-            parent.mkdirs();
-        }
-
-        java.io.StringWriter sw = new java.io.StringWriter();
-        m.marshal(data, sw);
-        m.marshal(data,out);
-    }
-
-    public Path getPath() { return path; }
 }

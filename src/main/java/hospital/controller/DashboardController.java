@@ -18,6 +18,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.chart.PieChart;
 import javafx.scene.layout.Pane;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.YearMonth;
 
 public class DashboardController {
@@ -73,7 +74,7 @@ public class DashboardController {
     }
 
     @FXML
-    public void initialize() {
+    public void initialize() throws SQLException {
         Usuario usuario = Sesion.getUsuario();
         if (usuario != null && lblUsuario != null) {
             lblUsuario.setText(usuario.getNombre());
@@ -82,7 +83,7 @@ public class DashboardController {
         mostrarGraficoLineas(usuario);
         mostrarGraficoPastel(usuario);
     }
-    private void configurarPermisosPorRol(Usuario usuario) {
+    private void configurarPermisosPorRol(Usuario usuario) throws SQLException {
         if (usuario == null || usuario.getId() == null) {
             ocultarTodosLosBotones();
             return;
@@ -306,7 +307,7 @@ public class DashboardController {
             stage.setScene(scene);
             stage.setTitle("Prescribir Receta");
             stage.show();
-        } catch (IOException e) {
+        } catch (IOException | SQLException e) {
             e.printStackTrace();
             Alerta.error("Error", "Error al cargar la vista de prescribir receta: " + e.getMessage());
         }

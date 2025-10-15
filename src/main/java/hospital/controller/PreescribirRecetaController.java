@@ -327,8 +327,8 @@ public class PreescribirRecetaController {
             for (DetalleReceta d : listaDetalles) {
                 receta.agregarDetalle(d);
             }
-
-            recetaIntermediaria.crearReceta(medico, receta);
+// se quito el medico del parametro, si no sirve hay que ponerlo again
+            recetaIntermediaria.crearReceta(receta);
 
             mostrarInformacion("Éxito", "Receta preescrita correctamente con ID: " + receta.getId());
 

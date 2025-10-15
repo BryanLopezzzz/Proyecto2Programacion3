@@ -1,68 +1,131 @@
 package hospital.datos;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
-import jakarta.xml.bind.Unmarshaller;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import hospital.datos.conector.MedicoConector;
-import hospital.datos.entidades.MedicoEntidad;
+import hospital.model.Medico;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MedicoDatos {
-    private final Path path;
-    private final JAXBContext context;
-    private MedicoConector cache;
+public class MedicoDatos implements Plantilla {
 
-    public MedicoDatos(String filePath) {
-        try {
-            this.path = Path.of(Objects.requireNonNull(filePath));
-            this.context = JAXBContext.newInstance(MedicoConector.class, MedicoEntidad.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Error inicializando MedicoDatos: " + e.getMessage(), e);
+    @Override
+    public boolean insert(Object obj) throws SQLException {
+        if (!(obj instanceof Medico medico)) return false;
+
+        String sql = "INSERT INTO medico (id, clave, nombre, especialidad) VALUES (?, ?, ?, ?)";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, medico.getId());
+            ps.setString(2, medico.getClave());
+            ps.setString(3, medico.getNombre());
+            ps.setString(4, medico.getEspecialidad());
+
+            return ps.executeUpdate() > 0;
         }
     }
 
-    public synchronized MedicoConector load() {
-        try {
-            if (cache != null) return cache;
+    @Override
+    public boolean update(Object obj) throws SQLException {
+        if (!(obj instanceof Medico medico)) return false;
 
-            if (Files.notExists(path)) {
-                cache = new MedicoConector();
-                save(cache);
-                return cache;
+        String sql = "UPDATE medico SET clave = ?, nombre = ?, especialidad = ? WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, medico.getClave());
+            ps.setString(2, medico.getNombre());
+            ps.setString(3, medico.getEspecialidad());
+            ps.setString(4, medico.getId());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean delete(String id) throws SQLException {
+        String sql = "DELETE FROM medico WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean findById(int id) throws SQLException {
+        String sql = "SELECT * FROM medico WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, String.valueOf(id));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
+        }
+    }
 
-            Unmarshaller u = context.createUnmarshaller();
-            cache = (MedicoConector) u.unmarshal(path.toFile());
+    @Override
+    public List<Object> findAll() throws SQLException {
+        String sql = "SELECT * FROM medico ORDER BY id";
+        List<Object> lista = new ArrayList<>();
 
-            if (cache.getMedicos() == null) {
-                cache.setMedicos(new java.util.ArrayList<>());
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Medico m = new Medico(
+                        rs.getString("id"),
+                        rs.getString("clave"),
+                        rs.getString("nombre"),
+                        rs.getString("especialidad")
+                );
+                lista.add(m);
             }
-            return cache;
-        } catch (Exception e) {
-            throw new RuntimeException("Error cargando médicos: " + e.getMessage(), e);
         }
+        return lista;
     }
 
-    public synchronized void save(MedicoConector data) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+    // --- Métodos adicionales más prácticos (fuera de la interfaz) ---
 
-        File out = path.toFile();
-        File parent = out.getParentFile();
+    public Medico buscarPorId(String id) throws SQLException {
+        String sql = "SELECT * FROM medico WHERE id = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
 
-        if(parent != null){
-            parent.mkdirs();
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Medico(
+                            rs.getString("id"),
+                            rs.getString("clave"),
+                            rs.getString("nombre"),
+                            rs.getString("especialidad")
+                    );
+                }
+            }
         }
-
-        java.io.StringWriter sw = new java.io.StringWriter();
-        m.marshal(data, sw);
-        m.marshal(data,out);
+        return null;
     }
 
-    public Path getPath() { return path; }
+    public List<Medico> listarTodos() throws SQLException {
+        String sql = "SELECT * FROM medico ORDER BY id";
+        List<Medico> lista = new ArrayList<>();
+
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                lista.add(new Medico(
+                        rs.getString("id"),
+                        rs.getString("clave"),
+                        rs.getString("nombre"),
+                        rs.getString("especialidad")
+                ));
+            }
+        }
+        return lista;
+    }
 }

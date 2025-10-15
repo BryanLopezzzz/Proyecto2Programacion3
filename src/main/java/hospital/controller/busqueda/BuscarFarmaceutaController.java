@@ -162,22 +162,15 @@ public class BuscarFarmaceutaController {
 
     @FXML
     public void GenerarReporte(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Guardar Reporte de Farmaceutas");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos XML", "*.xml")
-        );
-        fileChooser.setInitialFileName("reporte_farmaceutas.xml");
+        try {
+            List<Farmaceuta> reporte = farmaceutaIntermediaria.generarReporte(admin);
 
-        Stage stage = (Stage) btnReporte.getScene().getWindow();
-        File archivo = fileChooser.showSaveDialog(stage);
+            tblFarmaceutas.getItems().setAll(reporte);
 
-        if (archivo != null) {
-            try {
-                farmaceutaIntermediaria.generarReporte(admin, archivo.getAbsolutePath());
-            } catch (Exception e) {
-                mostrarError("Error al generar reporte: " + e.getMessage());
-            }
+            mostrarInfo("Reporte generado correctamente.");
+
+        } catch (Exception e) {
+            mostrarError("Error al generar reporte: " + e.getMessage());
         }
     }
 

@@ -1,78 +1,89 @@
 package hospital.datos;
 
 import hospital.model.Medicamento;
-import hospital.logica.mapper.MedicamentoMapper;
-import hospital.datos.conector.MedicamentoConector;
-import jakarta.xml.bind.*;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MedicamentoDatos {
+public class MedicamentoDatos implements Plantilla {
 
-    private final Path path;
-    private final JAXBContext context;
-    private MedicamentoConector cache;
+    @Override
+    public boolean insert(Object obj) throws SQLException {
+        if (!(obj instanceof Medicamento medicamento)) return false;
 
-    public MedicamentoDatos(String filePath) {
-        try {
-            this.path = Path.of(Objects.requireNonNull(filePath));
-            this.context = JAXBContext.newInstance(MedicamentoConector.class, Medicamento.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+        String sql = "INSERT INTO medicamento (codigo, nombre, presentacion) VALUES (?, ?, ?)";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, medicamento.getCodigo());
+            ps.setString(2, medicamento.getNombre());
+            ps.setString(3, medicamento.getPresentacion());
+
+            return ps.executeUpdate() > 0;
         }
     }
 
-    public synchronized MedicamentoConector load() {
-        try {
-            if (cache != null) return cache;
+    @Override
+    public boolean update(Object obj) throws SQLException {
+        if (!(obj instanceof Medicamento medicamento)) return false;
 
-            if (Files.notExists(path)) {
-                cache = new MedicamentoConector();
-                save(cache);
-                return cache;
+        String sql = "UPDATE medicamento SET nombre = ?, presentacion = ? WHERE codigo = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, medicamento.getNombre());
+            ps.setString(2, medicamento.getPresentacion());
+            ps.setString(3, medicamento.getCodigo());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean delete(String id) throws SQLException {
+        // Aquí usamos "id" como "codigo", pero la interfaz exige int.
+        // Se convierte a String para compatibilidad.
+        String sql = "DELETE FROM medicamento WHERE codigo = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean findById(int id) throws SQLException {
+        String sql = "SELECT * FROM medicamento WHERE codigo = ?";
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, String.valueOf(id));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
+        }
+    }
 
-            Unmarshaller u = context.createUnmarshaller();
-            cache = (MedicamentoConector) u.unmarshal(path.toFile());
+    @Override
+    public List<Object> findAll() throws SQLException {
+        String sql = "SELECT * FROM medicamento ORDER BY codigo";
+        List<Object> lista = new ArrayList<>();
 
-            if (cache.getMedicamentos() == null) {
-                cache.setMedicamentos(new java.util.ArrayList<>());
+        try (Connection cn = DB.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Medicamento med = new Medicamento(
+                        rs.getString("codigo"),
+                        rs.getString("nombre"),
+                        rs.getString("presentacion")
+                );
+                lista.add(med);
             }
-            return cache;
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
         }
+        return lista;
     }
 
-    public synchronized void save(MedicamentoConector data) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
-
-        File out = path.toFile();
-        File parent = out.getParentFile();
-
-        if(parent != null){
-            parent.mkdirs();
-        }
-
-        java.io.StringWriter sw = new java.io.StringWriter();
-        m.marshal(data, sw);
-        m.marshal(data,out);
-    }
-
-    public Path getPath() {
-        return path;
-    }
-
-    // Búsqueda rápida por código
-    public Medicamento buscarPorCodigo(String codigo) {
-        return load().getMedicamentos().stream()
-                .map(MedicamentoMapper::fromXML)   // convertir a Medicamento
-                .filter(m -> m.getCodigo().equalsIgnoreCase(codigo))
-                .findFirst()
-                .orElse(null);                     // ahora devuelve un Medicamento
-    }
 }

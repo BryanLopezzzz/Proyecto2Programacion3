@@ -8,6 +8,7 @@ import hospital.logica.MedicoLogica;
 import hospital.logica.FarmaceutaLogica;
 import hospital.logica.AdministradorLogica;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,21 +36,20 @@ public class UsuarioManager {
 
     // ==== LOGIN ====
     public Usuario login(String id, String clave) throws Exception {
-        if (id == null || id.isBlank())
-            throw new Exception("El id es obligatorio.");
-        if (clave == null || clave.isBlank())
-            throw new Exception("La clave es obligatoria.");
+        try {
+            Usuario u = administradorLogica.buscarPorId(id);
+            if (u != null && u.getClave().equals(clave)) return u;
 
-        Usuario u = administradorLogica.buscarPorId(id);
-        if (u != null && u.getClave().equals(clave)) return u;
+            u = farmaceutaLogica.buscarPorId(id);
+            if (u != null && u.getClave().equals(clave)) return u;
 
-        u = farmaceutaLogica.buscarPorId(id);
-        if (u != null && u.getClave().equals(clave)) return u;
+            u = medicoLogica.buscarPorId(id);
+            if (u != null && u.getClave().equals(clave)) return u;
 
-        u = medicoLogica.buscarPorId(id);
-        if (u != null && u.getClave().equals(clave)) return u;
-
-        throw new Exception("Credenciales incorrectas.");
+            throw new Exception("Credenciales incorrectas.");
+        } catch (SQLException e) {
+            throw new Exception("Error al buscar usuario: " + e.getMessage(), e);
+        }
     }
 
     // ==== Cambio de clave ====
@@ -91,14 +91,14 @@ public class UsuarioManager {
         throw new Exception("Usuario no encontrado.");
     }
 
-    public boolean existeUsuario(String id) {
+    public boolean existeUsuario(String id) throws SQLException {
         if (administradorLogica.buscarPorId(id) != null) return true;
         if (medicoLogica.buscarPorId(id) != null) return true;
         if (farmaceutaLogica.buscarPorId(id) != null) return true;
         return false;
     }
 
-    public List<Usuario> listarTodos() {
+    public List<Usuario> listarTodos() throws SQLException {
         List<Usuario> usuarios = new ArrayList<>();
         usuarios.addAll(medicoLogica.listar());
         usuarios.addAll(farmaceutaLogica.listar());
@@ -106,7 +106,7 @@ public class UsuarioManager {
         return usuarios;
     }
 
-    public TipoUsuario determinarTipoUsuario(String id) {
+    public TipoUsuario determinarTipoUsuario(String id) throws SQLException {
         if (id == null || id.isEmpty()) {
             return TipoUsuario.DESCONOCIDO;
         }
@@ -118,7 +118,7 @@ public class UsuarioManager {
         return TipoUsuario.DESCONOCIDO;
     }
 
-    public TipoUsuario getTipoUsuarioActual() {
+    public TipoUsuario getTipoUsuarioActual() throws SQLException {
         Usuario u = Sesion.getUsuario();
         if (u == null) {
             return TipoUsuario.DESCONOCIDO;
@@ -126,7 +126,7 @@ public class UsuarioManager {
         return determinarTipoUsuario(u.getId());
     }
 
-    public boolean tienePermiso(String id, String funcionalidad) {
+    public boolean tienePermiso(String id, String funcionalidad) throws SQLException {
         TipoUsuario tipo = determinarTipoUsuario(id);
 
         switch (tipo) {
@@ -151,14 +151,14 @@ public class UsuarioManager {
         }
     }
 
-    public boolean usuarioActualTienePermiso(String funcionalidad) {
+    public boolean usuarioActualTienePermiso(String funcionalidad) throws SQLException {
         if (usuarioActual == null) {
             return false;
         }
         return tienePermiso(usuarioActual.getId(), funcionalidad);
     }
 
-    public String getNombreTipoUsuario(String id) {
+    public String getNombreTipoUsuario(String id) throws SQLException {
         TipoUsuario tipo = determinarTipoUsuario(id);
         switch (tipo) {
             case ADMINISTRADOR: return "Administrador";
@@ -168,7 +168,7 @@ public class UsuarioManager {
         }
     }
 
-    public String getNombreTipoUsuarioActual() {
+    public String getNombreTipoUsuarioActual() throws SQLException {
         if (usuarioActual == null) {
             return "Sin usuario";
         }

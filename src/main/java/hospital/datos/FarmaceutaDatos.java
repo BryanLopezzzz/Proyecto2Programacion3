@@ -45,7 +45,7 @@ public class FarmaceutaDatos implements Plantilla {
         try (Connection cn = DB.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
 
-            ps.setString(1, String.valueOf(id));
+            ps.setString(1, id);
             return ps.executeUpdate() > 0;
         }
     }

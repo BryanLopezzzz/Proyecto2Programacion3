@@ -96,11 +96,6 @@ public class PreescribirRecetaController {
     }
 
     private void cargarDatosPersistentes() {
-        // Si hay datos de una sesión anterior, mantenerlos
-        // En una implementación real podrías cargar desde un archivo temporal o preferencias
-        System.out.println("Cargando datos persistentes - Detalles: " + listaDetalles.size());
-
-        // Actualizar estado de botones
         actualizarEstadoBotones();
     }
 
@@ -110,7 +105,6 @@ public class PreescribirRecetaController {
 
     public void setMedico(Medico medico) {
         this.medico = medico;
-        System.out.println("Médico configurado: " + (medico != null ? medico.getNombre() : "NULL"));
     }
 
     @FXML

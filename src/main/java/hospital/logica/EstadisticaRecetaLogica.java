@@ -22,7 +22,6 @@ public class EstadisticaRecetaLogica {
         return cargarRecetas().size();
     }
 
-    // Estadística: recetas por estado (similar a clientesPorRangoEdad)
     public LinkedHashMap<String, Long> recetasPorEstado() {
         LinkedHashMap<String, Long> resultado = new LinkedHashMap<>();
         List<String> estados = Arrays.asList(
@@ -46,24 +45,30 @@ public class EstadisticaRecetaLogica {
         return resultado;
     }
 
-    // Estadística: medicamentos por mes (para un medicamento específico)
     public LinkedHashMap<String, Integer> medicamentosPorMes(YearMonth desde, YearMonth hasta) {
         LinkedHashMap<String, Integer> resultado = new LinkedHashMap<>();
 
-        Map<String, Integer> conteos = cargarRecetas().stream()
-                .filter(r -> r.getFecha() != null)
-                .filter(r -> {
-                    YearMonth ym = YearMonth.from(r.getFecha());
-                    return !ym.isBefore(desde) && !ym.isAfter(hasta);
-                })
-                .flatMap(r -> r.getDetalles().stream()
-                        .map(d -> Map.entry(YearMonth.from(r.getFecha()).toString(), d.getCantidad()))
-                )
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        Integer::sum
-                ));
+        List<Receta> recetas = cargarRecetas();
+
+        Map<String, Integer> conteos = new HashMap<>();
+
+        for (Receta r : recetas) {
+            if (r.getFecha() != null) {
+                YearMonth ym = YearMonth.from(r.getFecha());
+
+                if (!ym.isBefore(desde) && !ym.isAfter(hasta)) {
+                    String mesKey = ym.toString();
+
+                    if (r.getDetalles() != null && !r.getDetalles().isEmpty()) {
+                        int cantidadTotal = r.getDetalles().stream()
+                                .mapToInt(detalle->detalle.getCantidad())
+                                .sum();
+
+                        conteos.put(mesKey, conteos.getOrDefault(mesKey, 0) + cantidadTotal);
+                    }
+                }
+            }
+        }
 
         YearMonth actual = desde;
         while (!actual.isAfter(hasta)) {

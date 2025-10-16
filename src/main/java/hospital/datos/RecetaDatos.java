@@ -70,7 +70,7 @@ public class RecetaDatos implements Plantilla {
 
     @Override
     public List<Object> findAll() throws SQLException {
-        String sql = "SELECT * FROM receta ORDER BY id";
+        String sql = "SELECT * FROM receta ORDER BY fecha DESC";
         List<Object> lista = new ArrayList<>();
 
         try (Connection cn = DB.getConnection();
@@ -93,9 +93,20 @@ public class RecetaDatos implements Plantilla {
                 receta.setFechaRetiro(rs.getDate("fecha_retiro").toLocalDate());
                 receta.setEstado(EstadoReceta.valueOf(rs.getString("estado")));
 
+                try {
+                    List<DetalleReceta> detalles = listarDetallesPorReceta(receta.getId());
+                    receta.setDetalles(detalles);
+                    System.out.println("✓ Receta " + receta.getId() + " cargada con " + detalles.size() + " detalles");
+                } catch (Exception e) {
+                    System.err.println("✗ Error cargando detalles de receta " + receta.getId());
+                    receta.setDetalles(new ArrayList<>());
+                }
+
                 lista.add(receta);
             }
         }
+
+        System.out.println("Total de recetas cargadas: " + lista.size());
         return lista;
     }
 
@@ -116,7 +127,6 @@ public class RecetaDatos implements Plantilla {
                     receta.setFecha(rs.getDate("fecha").toLocalDate());
                     receta.setEstado(EstadoReceta.valueOf(rs.getString("estado")));
 
-                    // Evita null en fechaRetiro
                     Date fechaRetiroSql = rs.getDate("fechaRetiro");
                     if (fechaRetiroSql != null) {
                         receta.setFechaRetiro(fechaRetiroSql.toLocalDate());
@@ -126,12 +136,10 @@ public class RecetaDatos implements Plantilla {
                     paciente.setId(rs.getString("idPaciente"));
                     receta.setPaciente(paciente);
 
-                    // Crear Médico solo con ID
                     Medico medico = new Medico();
                     medico.setId(rs.getString("idMedico"));
                     receta.setMedico(medico);
 
-                    // Cargar detalles asociados
                     List<DetalleReceta> detalles = listarDetallesPorReceta(receta.getId());
                     receta.setDetalles(detalles);
 
@@ -146,7 +154,11 @@ public class RecetaDatos implements Plantilla {
     private List<DetalleReceta> listarDetallesPorReceta(String idReceta) throws SQLException {
         List<DetalleReceta> detalles = new ArrayList<>();
 
-        String sql = "SELECT * FROM detalle_receta WHERE idReceta = ?";
+        String sql = "SELECT dr.*, m.nombre as med_nombre, m.presentacion as med_presentacion " +
+                "FROM detalle_receta dr " +
+                "INNER JOIN medicamento m ON dr.medicamento_codigo = m.codigo " +
+                "WHERE dr.receta_id = ?";
+
         try (Connection cn = DB.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
 
@@ -156,21 +168,28 @@ public class RecetaDatos implements Plantilla {
                 while (rs.next()) {
                     DetalleReceta detalle = new DetalleReceta();
 
-                    // Crear medicamento básico
                     Medicamento medicamento = new Medicamento();
-                    medicamento.setCodigo(rs.getString("idMedicamento"));
-
-                    medicamento.setNombre(rs.getString("nombreMedicamento"));
-                    medicamento.setPresentacion(rs.getString("presentacion"));
+                    medicamento.setCodigo(rs.getString("medicamento_codigo"));
+                    medicamento.setNombre(rs.getString("med_nombre"));
+                    medicamento.setPresentacion(rs.getString("med_presentacion"));
 
                     detalle.setMedicamento(medicamento);
                     detalle.setCantidad(rs.getInt("cantidad"));
                     detalle.setIndicaciones(rs.getString("indicaciones"));
-                    detalle.setDiasTratamiento(rs.getInt("diasTratamiento"));
+
+                    int diasTratamiento = rs.getInt("dias_tratamiento");
+                    if (rs.wasNull()) {
+                        diasTratamiento = 7; //Un valor por defecto
+                    }
+                    detalle.setDiasTratamiento(diasTratamiento);
 
                     detalles.add(detalle);
                 }
             }
+        } catch (SQLException e) {
+            System.err.println("Error cargando detalles de receta " + idReceta + ": " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
         }
 
         return detalles;

@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.LoginLogica;
 import hospital.logica.Sesion;
 import hospital.model.Usuario;
@@ -22,6 +23,8 @@ public class LoginController {
     private javafx.scene.image.ImageView imgVerClave;
     @FXML
     private Button btnEntrar;
+    @FXML //Es lo nuevo de hilos
+    private ProgressIndicator progressIndicator;
 
     private final LoginLogica loginLogica = new LoginLogica();
     private boolean claveVisible = false;
@@ -41,32 +44,69 @@ public class LoginController {
             return;
         }
 
-        try {
-            Usuario usuario = loginLogica.login(id, clave);
-            Sesion.setUsuario(usuario);
+        loginAsync(id, clave);
+    }
 
-            // cargar la vista principal(esto puede cambiar si el menu correcto no es ese)
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/dashboard.fxml"));
-            Scene scene = new Scene(loader.load());
+    private void loginAsync(String id, String clave) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            // mandar el usuario al dashboard
-            DashboardController dashboardController = loader.getController();
-            dashboardController.setLoginController(loginLogica);
+        Async.Run(
+                 () -> {
+                    try {
+                        return loginLogica.login(id, clave);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
 
-            Stage stage = new Stage();
-            stage.setTitle("Menú Principal");
-            stage.setScene(scene);
-            stage.show();
+                // OnSuccess - Se ejecuta en el hilo de JavaFX
+                usuario -> {
+                    Sesion.setUsuario(usuario);
 
-            // cerrar la ventana de login
-            Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
-            loginStage.close();
+                    try {
+                        // Cargar dashboard
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/dashboard.fxml"));
+                        Scene scene = new Scene(loader.load());
 
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-            Alert alert = new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
-            alert.showAndWait();
-        }
+                        // Pasar el LoginLogica al dashboard
+                        DashboardController dashboardController = loader.getController();
+                        dashboardController.setLoginController(loginLogica);
+
+                        Stage stage = new Stage();
+                        stage.setTitle("Sistema Hospital - Dashboard");
+                        stage.setScene(scene);
+                        stage.show();
+
+                        // Cerrar ventana de login
+                        Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
+                        loginStage.close();
+
+                    } catch (Exception e) {
+                        mostrarCargando(false);
+                        deshabilitarControles(false);
+                        mostrarError("Error al cargar el dashboard: " + e.getMessage());
+                    }
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    String mensaje = error.getMessage();
+                    if (mensaje.contains("Credenciales incorrectas")) {
+                        mostrarError("Usuario o contraseña incorrectos.");
+                    } else {
+                        mostrarError("Error al iniciar sesión: " + mensaje);
+                    }
+
+                    // Limpiar contraseña por seguridad
+                    txtClave.clear();
+                    txtClaveVisible.clear();
+                    txtClave.requestFocus();
+                }
+        );
     }
 
     @FXML
@@ -84,5 +124,27 @@ public class LoginController {
             txtClaveVisible.setVisible(false);
             imgVerClave.setImage(new javafx.scene.image.Image(getClass().getResourceAsStream("/icons/eye.png")));
         }
+    }
+    //Metodos nuevo, verificar si sirve como se espera con hilos
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtUsuario.setDisable(deshabilitar);
+        txtClave.setDisable(deshabilitar);
+        txtClaveVisible.setDisable(deshabilitar);
+        btnEntrar.setDisable(deshabilitar);
+        btnVerClave.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+
+    private void mostrarError(String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error de autenticación");
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
     }
 }

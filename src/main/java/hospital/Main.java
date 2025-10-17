@@ -1,5 +1,6 @@
 package hospital;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.AdministradorLogica;
 import hospital.model.Administrador;
 import javafx.application.Application;
@@ -24,6 +25,11 @@ public class Main extends Application {
         Scene scene = new Scene(loader.load());
         primaryStage.setTitle("Login Hospital");
         primaryStage.setScene(scene);
+        // Esta linea maneja el cierre de la aplicación
+        primaryStage.setOnCloseRequest(event -> {
+            Async.cerrarConexion();
+        });
+
         primaryStage.show();
     }
 

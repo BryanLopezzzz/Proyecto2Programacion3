@@ -8,6 +8,10 @@ CREATE DATABASE hospital
     COLLATE utf8mb4_unicode_ci;
 
 USE hospital;
+-- =============================================
+-- Es importante recalcar que estan hechas las 3F aunque trabajamos con String , gracias al VARCHAR(50)
+-- =============================================
+
 
 -- =============================================
 -- TABLAS DE USUARIOS
@@ -140,7 +144,7 @@ INSERT INTO detalle_receta (receta_id, medicamento_codigo, cantidad, indicacione
 -- VERIFICACIÓN
 -- =============================================
 
-SELECT '✓ Base de datos creada' AS Estado;
+SELECT 'Base de datos creada' AS Estado;
 
 SELECT 'Administradores' AS Tabla, COUNT(*) AS Total FROM administrador
 UNION ALL SELECT 'Médicos', COUNT(*) FROM medico
@@ -152,7 +156,7 @@ UNION ALL SELECT 'Detalles de Receta', COUNT(*) FROM detalle_receta;
 
 SELECT '
 ================================================
-✓ CONFIGURACIÓN COMPLETADA
+CONFIGURACIÓN COMPLETADA
 ================================================
 Login: admin / admin
 ================================================

@@ -61,6 +61,9 @@ public class BuscarPacienteController {
     @FXML
     private Button btnBuscar;
 
+    @FXML
+    private ProgressIndicator progressIndicator; // Lo nuevo por si no sirve el proyecto, tema de hilos
+
     private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador(); // puedes pasar el admin logueado
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -81,17 +84,35 @@ public class BuscarPacienteController {
         btnFiltro.setItems(FXCollections.observableArrayList("Nombre", "ID"));
         btnFiltro.setValue("Nombre");
 
-        cargarPacientes();
+        cargarPacientesAsync();
     }
 
-    private void cargarPacientes() {
-        try {
-            List<Paciente> lista = pacienteIntermediaria.listar(admin);
-            pacientesObs = FXCollections.observableArrayList(lista);
-            tblPacientes.setItems(pacientesObs);
-        } catch (Exception e) {
-            mostrarError("Error al cargar pacientes: " + e.getMessage());
-        }
+    private void cargarPacientesAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return pacienteIntermediaria.listar(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar pacientes: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess - Se ejecuta en el hilo de JavaFX
+                lista -> {
+                    pacientesObs = FXCollections.observableArrayList(lista);
+                    tblPacientes.setItems(pacientesObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al cargar pacientes: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -125,27 +146,44 @@ public class BuscarPacienteController {
             return;
         }
 
-        // Agregar confirmación
         Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
         confirmacion.setTitle("Confirmar eliminación");
         confirmacion.setHeaderText("¿Está seguro que desea eliminar el paciente?");
         confirmacion.setContentText("Paciente: " + seleccionado.getNombre() + " (ID: " + seleccionado.getId() + ")");
 
         if (confirmacion.showAndWait().get() == ButtonType.OK) {
-            try {
-                boolean eliminado = pacienteIntermediaria.eliminar(admin, seleccionado.getId());
-                if (eliminado) {
-                    mostrarInfo("Paciente eliminado correctamente.");
-                    cargarPacientes();
-                } else {
-                    mostrarError("No se pudo eliminar el paciente.");
-                }
-            } catch (Exception e) {
-                mostrarError("Error al eliminar: " + e.getMessage());
-            }
+            eliminarPacienteAsync(seleccionado);
         }
     }
 
+    private void eliminarPacienteAsync(Paciente paciente) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        pacienteIntermediaria.eliminar(admin, paciente.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al eliminar: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                () -> {
+                    pacientesObs.remove(paciente);
+                    tblPacientes.refresh();
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Paciente eliminado correctamente.");
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al eliminar: " + error.getMessage());
+                }
+        );
+    }
     @FXML
     public void EditarPaciente(ActionEvent event) {
         Paciente seleccionado = tblPacientes.getSelectionModel().getSelectedItem();
@@ -177,17 +215,37 @@ public class BuscarPacienteController {
 
     @FXML
     public void GenerarReporte() {
-        try {
-            List<Paciente> reporte = pacienteIntermediaria.generarReporte(admin);
-
-            tblPacientes.getItems().setAll(reporte);
-
-            mostrarInfo( "Reporte generado correctamente desde la base de datos.");
-
-        } catch (Exception e) {
-            mostrarError("Error al generar reporte: " + e.getMessage());
-        }
+        generarReporteAsync();
     }
+
+    private void generarReporteAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return pacienteIntermediaria.generarReporte(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                reporte -> {
+                    tblPacientes.getItems().setAll(reporte);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Reporte generado correctamente desde la base de datos.");
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al generar reporte: " + error.getMessage());
+                }
+        );
+    }
+
 
     @FXML
     public void BuscarPaciente(ActionEvent event) {
@@ -237,5 +295,21 @@ public class BuscarPacienteController {
     private void mostrarInfo(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, mensaje);
         alert.showAndWait();
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnAgregarPaciente.setDisable(deshabilitar);
+        btnEliminarPaciente.setDisable(deshabilitar);
+        btnEditarPaciente.setDisable(deshabilitar);
+        btnBuscar.setDisable(deshabilitar);
+        btnReporte.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        btnFiltro.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 }

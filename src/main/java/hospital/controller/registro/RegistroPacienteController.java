@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
 import hospital.model.Paciente;
@@ -24,43 +25,74 @@ public class RegistroPacienteController {
     @FXML private Button btnGuardar; // El FXML no tiene fx:id, necesita agregarse
     @FXML private Button btnVolver;
 
+    @FXML private ProgressIndicator progressIndicator;
+
     private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador(); // Puedes pasar el admin logueado
 
     @FXML
     public void initialize() {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     @FXML
     public void Guardar(ActionEvent event) {
-        try {
-            // Validar campos
             if (!validarCampos()) {
                 return;
             }
 
-            Paciente nuevoPaciente = new Paciente();
-            nuevoPaciente.setId(txtIdentificacion.getText().trim());
-            nuevoPaciente.setNombre(txtNombre.getText().trim());
-            nuevoPaciente.setTelefono(txtTelefono.getText().trim());
-            nuevoPaciente.setFechaNacimiento(dtpFechaNac.getValue());
+            String id = txtIdentificacion.getText().trim();
+            String nombre = txtNombre.getText().trim();
+            String telefono = txtTelefono.getText().trim();
+            LocalDate fechaNacimiento = dtpFechaNac.getValue();
 
-            pacienteIntermediaria.agregar(admin, nuevoPaciente);
+            guardarAsync(id, nombre, telefono, fechaNacimiento);
+    }
 
-            mostrarInfo("Paciente registrado exitosamente.\nID: " + nuevoPaciente.getId() +
-                    "\nNombre: " + nuevoPaciente.getNombre() +
-                    "\nTeléfono: " + nuevoPaciente.getTelefono() +
-                    "\nFecha de nacimiento: " + nuevoPaciente.getFechaNacimiento());
+    private void guardarAsync(String id, String nombre, String telefono, LocalDate fechaNacimiento) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            // Limpiar formulario después de guardar
-            limpiarCampos();
+        Async.Run(
+                () -> {
+                    try {
+                        Paciente nuevoPaciente = new Paciente();
+                        nuevoPaciente.setId(id);
+                        nuevoPaciente.setNombre(nombre);
+                        nuevoPaciente.setTelefono(telefono);
+                        nuevoPaciente.setFechaNacimiento(fechaNacimiento);
 
-            // Volver a búsqueda como en RegistroMedicoView
-            volverABusqueda();
+                        pacienteIntermediaria.agregar(admin, nuevoPaciente);
+                        return nuevoPaciente;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
 
-        } catch (Exception e) {
-            mostrarError("Error al registrar paciente: " + e.getMessage());
-        }
+                // OnSuccess
+                paciente -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    mostrarInfo("Paciente registrado exitosamente.\n" +
+                            "ID: " + paciente.getId() + "\n" +
+                            "Nombre: " + paciente.getNombre() + "\n" +
+                            "Teléfono: " + paciente.getTelefono() + "\n" +
+                            "Fecha de nacimiento: " + paciente.getFechaNacimiento());
+
+                    limpiarCampos();
+                    volverABusqueda();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al registrar paciente: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -112,8 +144,6 @@ public class RegistroPacienteController {
         txtNombre.clear();
         txtTelefono.clear();
         dtpFechaNac.setValue(null);
-
-        // Poner foco en el primer campo
         txtIdentificacion.requestFocus();
     }
 
@@ -131,7 +161,22 @@ public class RegistroPacienteController {
         }
     }
 
-    // Métodos utilitarios para mostrar alertas
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtIdentificacion.setDisable(deshabilitar);
+        txtNombre.setDisable(deshabilitar);
+        txtTelefono.setDisable(deshabilitar);
+        dtpFechaNac.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+
+        // Métodos utilitarios para mostrar alertas
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");

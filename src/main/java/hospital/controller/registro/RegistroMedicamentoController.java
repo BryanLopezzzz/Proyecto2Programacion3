@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
@@ -10,6 +11,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -33,6 +35,9 @@ public class RegistroMedicamentoController implements Initializable {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final MedicamentoLogica medicamentoIntermediaria;
     private final Administrador administrador;
 
@@ -43,6 +48,9 @@ public class RegistroMedicamentoController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     @FXML
@@ -63,26 +71,8 @@ public class RegistroMedicamentoController implements Initializable {
             mostrarError("La presentación es obligatoria.");
             return;
         }
-
-        try {
-            Medicamento medicamento = new Medicamento(
-                    codigo.trim(),
-                    nombre.trim(),
-                    presentacion.trim()
-            );
-
-            medicamentoIntermediaria.agregar(administrador, medicamento);
-
-            mostrarInfo("Medicamento guardado exitosamente.\n" +
-                    "Medicamento: " + medicamento.getNombre() + "\n" +
-                    "Codigo: " + medicamento.getCodigo() + "\n" +
-                    "Presentacion: " + medicamento.getPresentacion());
-
-            volverABusqueda();
-
-        } catch (Exception e) {
-            mostrarError("Error al agregar medicamento: " + e.getMessage());
-        }
+        //Lo nuevo de hilos, se elimino el try y catch que había
+        guardarAsync(codigo.trim(), nombre.trim(), presentacion.trim());
     }
 
     @FXML
@@ -99,6 +89,44 @@ public class RegistroMedicamentoController implements Initializable {
             mostrarError("Error al volver a la vista de búsqueda.");
         }
     }
+// Metodo de hilos que creo el profe en clases, similar al usado en la carpeta "busqueda"
+    private void guardarAsync(String codigo, String nombre, String presentacion) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        Medicamento medicamento = new Medicamento(codigo, nombre, presentacion);
+                        medicamentoIntermediaria.agregar(administrador, medicamento);
+                        return medicamento;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
+
+                // OnSuccess
+                medicamento -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    mostrarInfo("Medicamento guardado exitosamente.\n" +
+                            "Medicamento: " + medicamento.getNombre() + "\n" +
+                            "Codigo: " + medicamento.getCodigo() + "\n" +
+                            "Presentacion: " + medicamento.getPresentacion());
+
+                    limpiarCampos();
+                    volverABusqueda();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al agregar medicamento: " + error.getMessage());
+                }
+        );
+    }
 
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -113,6 +141,27 @@ public class RegistroMedicamentoController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    private void limpiarCampos() {
+        txtCodigo.clear();
+        txtNombre.clear();
+        txtPresentacion.clear();
+        txtCodigo.requestFocus();
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtCodigo.setDisable(deshabilitar);
+        txtNombre.setDisable(deshabilitar);
+        txtPresentacion.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 
 }

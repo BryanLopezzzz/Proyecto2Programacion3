@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
@@ -25,13 +26,19 @@ public class RegistroFarmaceutaController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
     private final Administrador admin = new Administrador(); // Se debe pasar el admin logueado
 
     @FXML
     public void initialize() {
-        // Configuraciones adicionales si son necesarias
+
         configurarValidaciones();
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     private void configurarValidaciones() {
@@ -56,22 +63,50 @@ public class RegistroFarmaceutaController {
             return;
         }
 
-        try {
-            Farmaceuta nuevoFarmaceuta = new Farmaceuta();
-            nuevoFarmaceuta.setId(txtIdentificacion.getText().trim());
-            nuevoFarmaceuta.setNombre(txtNombre.getText().trim());
+        String id = txtIdentificacion.getText().trim();
+        String nombre = txtNombre.getText().trim();
 
-            farmaceutaIntermediaria.agregar(admin, nuevoFarmaceuta);
+        guardarAsync(id, nombre);
+    }
 
-            mostrarInfo("Farmaceuta agregado exitosamente.");
+    private void guardarAsync(String id, String nombre) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            limpiarCampos();
+        Async.Run(
+                () -> {
+                    try {
+                        Farmaceuta nuevoFarmaceuta = new Farmaceuta();
+                        nuevoFarmaceuta.setId(id);
+                        nuevoFarmaceuta.setNombre(nombre);
 
-            volverABusqueda();
+                        farmaceutaIntermediaria.agregar(admin, nuevoFarmaceuta);
+                        return nuevoFarmaceuta;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
 
-        } catch (Exception e) {
-            mostrarError("Error al agregar farmaceuta: " + e.getMessage());
-        }
+                // OnSuccess
+                farmaceuta -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    mostrarInfo("Farmaceuta agregado exitosamente.\n" +
+                            "ID: " + farmaceuta.getId() + "\n" +
+                            "Nombre: " + farmaceuta.getNombre());
+
+                    limpiarCampos();
+                    volverABusqueda();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al agregar farmaceuta: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -129,13 +164,11 @@ public class RegistroFarmaceutaController {
         }
     }
 
-    // Método para ser llamado desde otras vistas si se necesita precargar datos
     public void cargarDatos(String id, String nombre) {
         if (id != null) txtIdentificacion.setText(id);
         if (nombre != null) txtNombre.setText(nombre);
     }
 
-    // Método para configurar si es edición (deshabilitar ID)
     public void configurarModoEdicion(boolean esEdicion) {
         txtIdentificacion.setEditable(!esEdicion);
         txtIdentificacion.setDisable(esEdicion);
@@ -152,6 +185,19 @@ public class RegistroFarmaceutaController {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtIdentificacion.setDisable(deshabilitar);
+        txtNombre.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 
     private void mostrarInfo(String mensaje) {

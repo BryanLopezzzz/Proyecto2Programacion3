@@ -1,6 +1,7 @@
 package hospital.controller.registro;
 
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.MedicoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medico;
@@ -11,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -31,38 +33,72 @@ public class RegistroMedicoController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final MedicoLogica medicoIntermediaria = new MedicoLogica();
     private final Administrador admin = new Administrador();
 
     @FXML
     public void initialize() {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     @FXML
     public void Guardar(ActionEvent event) {
-        try {
             if (!validarCampos()) {
                 return;
             }
 
-            Medico nuevoMedico = new Medico();
-            nuevoMedico.setId(txtIdentificacion.getText().trim());
-            nuevoMedico.setNombre(txtNombre.getText().trim());
-            nuevoMedico.setEspecialidad(txtEspecialidad.getText().trim());
+        String id = txtIdentificacion.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        String especialidad = txtEspecialidad.getText().trim();
 
+        guardarAsync(id, nombre, especialidad);
+    }
 
-            medicoIntermediaria.agregar(admin, nuevoMedico);
+    private void guardarAsync(String id, String nombre, String especialidad) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+// Si se analiza, se vera que el metodo de hilos es muy repetitivo, pero hay que esperar la confimacion de su funcionalidad
+        Async.Run(
+                () -> {
+                    try {
+                        Medico nuevoMedico = new Medico();
+                        nuevoMedico.setId(id);
+                        nuevoMedico.setNombre(nombre);
+                        nuevoMedico.setEspecialidad(especialidad);
 
-            mostrarInfo("Médico registrado exitosamente.\nID: " + nuevoMedico.getId() +
-                    "\nNombre: " + nuevoMedico.getNombre() +
-                    "\nEspecialidad: " + nuevoMedico.getEspecialidad());
+                        medicoIntermediaria.agregar(admin, nuevoMedico);
+                        return nuevoMedico;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
 
-            limpiarCampos();
-            volverABusqueda();
+                // OnSuccess
+                medico -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
 
-        } catch (Exception e) {
-            mostrarError("Error al registrar médico: " + e.getMessage());
-        }
+                    mostrarInfo("Médico registrado exitosamente.\n" +
+                            "ID: " + medico.getId() + "\n" +
+                            "Nombre: " + medico.getNombre() + "\n" +
+                            "Especialidad: " + medico.getEspecialidad());
+
+                    limpiarCampos();
+                    volverABusqueda();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al registrar médico: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -107,8 +143,6 @@ public class RegistroMedicoController {
         txtIdentificacion.clear();
         txtNombre.clear();
         txtEspecialidad.clear();
-
-        // Enfocar el primer campo para facilitar el ingreso de datos
         txtIdentificacion.requestFocus();
     }
 
@@ -136,6 +170,20 @@ public class RegistroMedicoController {
         alert.showAndWait();
     }
 
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtIdentificacion.setDisable(deshabilitar);
+        txtNombre.setDisable(deshabilitar);
+        txtEspecialidad.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+
     private void mostrarInfo(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Registro Exitoso");
@@ -143,18 +191,5 @@ public class RegistroMedicoController {
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
-    /*
-    public void precargarDatos(String id, String nombre, String especialidad) {
-        if (id != null && !id.isEmpty()) {
-            txtIdentificacion.setText(id);
-        }
-        if (nombre != null && !nombre.isEmpty()) {
-            txtNombre.setText(nombre);
-        }
-        if (especialidad != null && !especialidad.isEmpty()) {
-            txtEspecialidad.setText(especialidad);
-        }
-    }
-    */
 
 }

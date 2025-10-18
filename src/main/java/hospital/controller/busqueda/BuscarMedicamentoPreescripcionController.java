@@ -46,7 +46,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         configurarTabla();
         configurarFiltro();
-        cargarMedicamentos();
+        cargarMedicamentosAsync();
         configurarBusquedaEnTiempoReal();
     }
 
@@ -76,17 +76,28 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
         btnFiltro.setValue("Nombre");
     }
 
-    private void cargarMedicamentos() {
-        try {
-            List<Medicamento> lista = medicamentoIntermediaria.listar(administrador);
-            medicamentos.clear();
-            medicamentos.addAll(lista);
+    private void cargarMedicamentosAsync() {
+        Async.Run(
+                () -> {
+                    try {
+                        return medicamentoIntermediaria.listar(administrador);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar medicamentos: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                lista -> {
+                    medicamentos.clear();
+                    medicamentos.addAll(lista);
 
-            todosMedicamentos.clear();
-            todosMedicamentos.addAll(lista);
-        } catch (Exception e) {
-            mostrarError("Error al cargar medicamentos: " + e.getMessage());
-        }
+                    todosMedicamentos.clear();
+                    todosMedicamentos.addAll(lista);
+                },
+                // OnError
+                error -> {
+                    mostrarError("Error al cargar medicamentos: " + error.getMessage());
+                }
+        );
     }
 
     private void configurarBusquedaEnTiempoReal() {
@@ -118,61 +129,86 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
             return;
         }
 
-        try {
-            String filtro = btnFiltro.getValue();
-            List<Medicamento> resultados = new ArrayList<>();
+        String filtro = btnFiltro.getValue();
+        String criterio = textoBusqueda.trim();
 
-            switch (filtro) {
-                case "Código":
-                    // Búsqueda exacta por código
-                    Medicamento medicamento = medicamentoIntermediaria.buscarPorCodigo(administrador, textoBusqueda.trim());
-                    if (medicamento != null) {
-                        resultados.add(medicamento);
+        // Si es búsqueda por código o nombre, usar Async para consulta a BD
+        if ("Código".equals(filtro) || "Nombre".equals(filtro)) {
+            buscarEnBaseDatosAsync(filtro, criterio);
+        } else {
+            // Para búsquedas locales (en memoria), ejecutar directamente
+            buscarLocal(filtro, criterio);
+        }
+    }
+
+    private void buscarEnBaseDatosAsync(String filtro, String criterio) {
+        Async.Run(
+                () -> {
+                    try {
+                        List<Medicamento> resultados = new ArrayList<>();
+
+                        if ("Código".equals(filtro)) {
+                            Medicamento medicamento = medicamentoIntermediaria.buscarPorCodigo(administrador, criterio);
+                            if (medicamento != null) {
+                                resultados.add(medicamento);
+                            }
+                        } else if ("Nombre".equals(filtro)) {
+                            resultados = medicamentoIntermediaria.buscarPorNombre(administrador, criterio);
+                        }
+
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error en búsqueda: " + e.getMessage(), e);
                     }
-                    break;
+                },
+                // OnSuccess
+                resultados -> {
+                    medicamentos.clear();
+                    medicamentos.addAll(resultados);
 
-                case "Nombre":
-                    // Búsqueda por nombre usando el controlador
-                    resultados = medicamentoIntermediaria.buscarPorNombre(administrador, textoBusqueda.trim());
-                    break;
+                    if (resultados.isEmpty()) {
+                        System.out.println("No se encontraron resultados para: " + criterio);
+                    }
+                },
+                // OnError
+                error -> {
+                    mostrarError("Error al buscar medicamentos: " + error.getMessage());
+                }
+        );
+    }
 
-                case "Presentación":
-                    // Búsqueda local por presentación
-                    String busquedaMin = textoBusqueda.toLowerCase().trim();
-                    resultados = todosMedicamentos.stream()
-                            .filter(m -> m.getPresentacion() != null &&
-                                    m.getPresentacion().toLowerCase().contains(busquedaMin))
-                            .toList();
-                    break;
+    private void buscarLocal(String filtro, String criterio) {
+        List<Medicamento> resultados = new ArrayList<>();
+        String busquedaMin = criterio.toLowerCase();
 
-                case "Todos":
-                    // Búsqueda en todos los campos
-                    String busquedaTodos = textoBusqueda.toLowerCase().trim();
-                    resultados = todosMedicamentos.stream()
-                            .filter(m ->
-                                    (m.getCodigo() != null && m.getCodigo().toLowerCase().contains(busquedaTodos)) ||
-                                            (m.getNombre() != null && m.getNombre().toLowerCase().contains(busquedaTodos)) ||
-                                            (m.getPresentacion() != null && m.getPresentacion().toLowerCase().contains(busquedaTodos))
-                            )
-                            .toList();
-                    break;
+        switch (filtro) {
+            case "Presentación":
+                resultados = todosMedicamentos.stream()
+                        .filter(m -> m.getPresentacion() != null &&
+                                m.getPresentacion().toLowerCase().contains(busquedaMin))
+                        .toList();
+                break;
 
-                default:
-                    resultados = medicamentoIntermediaria.buscarPorNombre(administrador, textoBusqueda.trim());
-                    break;
-            }
+            case "Todos":
+                resultados = todosMedicamentos.stream()
+                        .filter(m ->
+                                (m.getCodigo() != null && m.getCodigo().toLowerCase().contains(busquedaMin)) ||
+                                        (m.getNombre() != null && m.getNombre().toLowerCase().contains(busquedaMin)) ||
+                                        (m.getPresentacion() != null && m.getPresentacion().toLowerCase().contains(busquedaMin))
+                        )
+                        .toList();
+                break;
 
-            medicamentos.clear();
-            medicamentos.addAll(resultados);
+            default:
+                resultados = todosMedicamentos;
+                break;
+        }
 
-            // Mostrar mensaje si no se encontraron resultados
-            if (resultados.isEmpty()) {
-                // No mostrar alert, solo dejar la tabla vacía
-                System.out.println("No se encontraron resultados para: " + textoBusqueda);
-            }
+        medicamentos.clear();
+        medicamentos.addAll(resultados);
 
-        } catch (Exception e) {
-            mostrarError("Error al buscar medicamentos: " + e.getMessage());
+        if (resultados.isEmpty()) {
+            System.out.println("No se encontraron resultados para: " + criterio);
         }
     }
 

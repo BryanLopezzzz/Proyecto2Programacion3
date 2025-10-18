@@ -36,6 +36,7 @@ public class BuscarMedicamentoController implements Initializable {
     @FXML private Button btnEditarMedicamento;
     @FXML private Button btnVolver;
     @FXML private Button btnReporte;
+    @FXML private ProgressIndicator progressIndicator;
 
     private final MedicamentoLogica medicamentoIntermediaria;
     private final Administrador administrador;
@@ -52,7 +53,7 @@ public class BuscarMedicamentoController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         configurarTabla();
         configurarFiltro();
-        cargarMedicamentos();
+        cargarMedicamentosAsync();
     }
 
     private void configurarTabla() {
@@ -69,45 +70,81 @@ public class BuscarMedicamentoController implements Initializable {
         btnFiltro.setValue("ID");
     }
 
-    private void cargarMedicamentos() {
-        try {
-            List<Medicamento> lista = medicamentoIntermediaria.listar(administrador);
-            medicamentos.clear();
-            medicamentos.addAll(lista);
-        } catch (Exception e) {
-            mostrarError("Error al cargar medicamentos: " + e.getMessage());
-        }
+    private void cargarMedicamentosAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return medicamentoIntermediaria.listar(administrador);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar medicamentos: " + e.getMessage(), e);
+                    }
+                },
+                lista -> {
+                    medicamentos.clear();
+                    medicamentos.addAll(lista);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al cargar medicamentos: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
     private void Buscar() {
         String textoBusqueda = txtBuscar.getText();
         if (textoBusqueda == null || textoBusqueda.trim().isEmpty()) {
-            cargarMedicamentos();
+            cargarMedicamentosAsync();
             return;
         }
 
-        try {
-            String filtro = btnFiltro.getValue();
-            List<Medicamento> resultados;
+        buscarMedicamentosAsync(textoBusqueda.trim());
+    }
 
-            if ("ID".equals(filtro)) {
-                Medicamento medicamento = medicamentoIntermediaria.buscarPorCodigo(administrador, textoBusqueda.trim());
-                if (medicamento != null) {
-                    resultados = List.of(medicamento);
-                } else {
-                    resultados = List.of();
+    private void buscarMedicamentosAsync(String criterio) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        String filtro = btnFiltro.getValue();
+                        List<Medicamento> resultados;
+
+                        if ("ID".equals(filtro)) {
+                            Medicamento medicamento = medicamentoIntermediaria.buscarPorCodigo(administrador, criterio);
+                            resultados = (medicamento != null) ? List.of(medicamento) : List.of();
+                        } else {
+                            resultados = medicamentoIntermediaria.buscarPorNombre(administrador, criterio);
+                        }
+
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al buscar medicamentos: " + e.getMessage(), e);
+                    }
+                },
+                resultados -> {
+                    medicamentos.clear();
+                    medicamentos.addAll(resultados);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    if (resultados.isEmpty()) {
+                        mostrarInfo("No se encontraron medicamentos con el criterio especificado.");
+                    }
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al buscar medicamentos: " + error.getMessage());
                 }
-            } else {
-                resultados = medicamentoIntermediaria.buscarPorNombre(administrador, textoBusqueda.trim());
-            }
-
-            medicamentos.clear();
-            medicamentos.addAll(resultados);
-
-        } catch (Exception e) {
-            mostrarError("Error al buscar medicamentos: " + e.getMessage());
-        }
+        );
     }
 
     @FXML
@@ -140,13 +177,35 @@ public class BuscarMedicamentoController implements Initializable {
 
         Optional<ButtonType> resultado = confirmacion.showAndWait();
         if (resultado.isPresent() && resultado.get() == ButtonType.OK) {
-            try {
-                medicamentoIntermediaria.borrar(administrador, seleccionado.getCodigo());
-                cargarMedicamentos();
-            } catch (Exception e) {
-                mostrarError("Error al eliminar medicamento: " + e.getMessage());
-            }
+            eliminarMedicamentoAsync(seleccionado);
         }
+    }
+
+    private void eliminarMedicamentoAsync(Medicamento medicamento) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        medicamentoIntermediaria.borrar(administrador, medicamento.getCodigo());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al eliminar: " + e.getMessage(), e);
+                    }
+                },
+                () -> {
+                    medicamentos.remove(medicamento);
+                    tblMedicos.refresh();
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Medicamento eliminado correctamente.");
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al eliminar medicamento: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -191,17 +250,34 @@ public class BuscarMedicamentoController implements Initializable {
 
     @FXML
     private void GenerarReporte() {
-        try {
-            List<Medicamento> reporte = medicamentoIntermediaria.generarReporte(administrador);
+        generarReporteAsync();
+    }
 
-            medicamentos.clear();
-            medicamentos.addAll(reporte);
+    private void generarReporteAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            mostrarInfo("Reporte generado correctamente.");
-
-        } catch (Exception e) {
-            mostrarError("Error al generar reporte: " + e.getMessage());
-        }
+        Async.Run(
+                () -> {
+                    try {
+                        return medicamentoIntermediaria.generarReporte(administrador);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+                    }
+                },
+                reporte -> {
+                    medicamentos.clear();
+                    medicamentos.addAll(reporte);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Reporte generado correctamente.");
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al generar reporte: " + error.getMessage());
+                }
+        );
     }
 
     private void mostrarError(String mensaje) {
@@ -234,5 +310,22 @@ public class BuscarMedicamentoController implements Initializable {
         Stage stage = (Stage) tblMedicos.getScene().getWindow();
         stage.close();
     }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnAgregarMedicamento.setDisable(deshabilitar);
+        btnEliminar.setDisable(deshabilitar);
+        btnEditarMedicamento.setDisable(deshabilitar);
+        btnBuscar.setDisable(deshabilitar);
+        btnReporte.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        btnFiltro.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+
 
 }

@@ -13,6 +13,7 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
+<?import javafx.scene.control.ProgressIndicator?>
 <AnchorPane fx:id="colNombreMedico" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="873.0" style="-fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.busqueda.BuscarMedicamentoPreescripcionController">
    <children>
       <TextField id="txtBuscar" fx:id="txtBuscar" layoutX="282.0" layoutY="134.0" onAction="#Buscar" prefHeight="37.0" prefWidth="337.0" style="-fx-background-color: #ffffff; -fx-border-color: #b3b3b3; -fx-border-radius: 4;">
@@ -58,5 +59,12 @@
             <TableColumn id="colPresentacion" fx:id="colPresentacion" prefWidth="233.66668701171875" text="Presentación" />
          </columns>
       </TableView>
+
+      //Lo nuevo, no sé si sirve porque no lo agregue al controller
+      <ProgressIndicator fx:id="progressIndicator"
+                         layoutX="275.0" layoutY="320.0"
+                         prefHeight="50.0" prefWidth="50.0"
+                         visible="false"
+                         style="-fx-progress-color: #75c594;" />
    </children>
 </AnchorPane>

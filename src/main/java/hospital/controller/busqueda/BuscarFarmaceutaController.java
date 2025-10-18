@@ -1,6 +1,5 @@
 package hospital.controller.busqueda;
 
-
 import hospital.controller.EditarFarmaceutaController;
 import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
@@ -13,10 +12,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
 import java.util.List;
 
 public class BuscarFarmaceutaController {
@@ -55,7 +52,7 @@ public class BuscarFarmaceutaController {
     private Button btnBuscar;
 
     private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
-    private final Administrador admin = new Administrador(); // puedes pasar el admin logueado
+    private final Administrador admin = new Administrador();
 
     private ObservableList<Farmaceuta> farmaceutasObs;
 
@@ -114,7 +111,6 @@ public class BuscarFarmaceutaController {
             return;
         }
 
-        // Confirmar eliminación
         Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
         confirmacion.setTitle("Confirmar eliminación");
         confirmacion.setHeaderText("¿Está seguro que desea eliminar el farmaceuta?");
@@ -140,15 +136,12 @@ public class BuscarFarmaceutaController {
         }
 
         try {
-            // Cargar la vista de edición
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/editarFarmaceuta.fxml"));
             Parent root = fxmlLoader.load();
 
-            // Obtener el controller de la vista de edición y pasarle el paciente
             EditarFarmaceutaController editarController = fxmlLoader.getController();
             editarController.cargarFarmaceuta(seleccionado);
 
-            // Cambiar la escena
             Stage stage = (Stage) btnEditar.getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setTitle("Editar Farmaceuta");
@@ -164,11 +157,8 @@ public class BuscarFarmaceutaController {
     public void GenerarReporte(ActionEvent event) {
         try {
             List<Farmaceuta> reporte = farmaceutaIntermediaria.generarReporte(admin);
-
             tblFarmaceutas.getItems().setAll(reporte);
-
             mostrarInfo("Reporte generado correctamente.");
-
         } catch (Exception e) {
             mostrarError("Error al generar reporte: " + e.getMessage());
         }
@@ -188,7 +178,7 @@ public class BuscarFarmaceutaController {
             List<Farmaceuta> resultados;
             if ("Nombre".equalsIgnoreCase(filtro)) {
                 resultados = farmaceutaIntermediaria.buscarPorNombre(admin, criterio);
-            } else { // ID
+            } else {
                 Farmaceuta f = farmaceutaIntermediaria.buscarPorId(admin, criterio);
                 resultados = (f != null) ? List.of(f) : List.of();
             }
@@ -220,7 +210,6 @@ public class BuscarFarmaceutaController {
         }
     }
 
-    // Métodos utilitarios
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");

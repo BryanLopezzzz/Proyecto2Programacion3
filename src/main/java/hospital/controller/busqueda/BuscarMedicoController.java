@@ -55,6 +55,8 @@ public class BuscarMedicoController {
 
     @FXML
     private Button btnBuscar;
+    @FXML
+    private ProgressIndicator progressIndicator;
 
     private final MedicoLogica medicoIntermediaria = new MedicoLogica();
     private final Administrador admin = new Administrador(); // puedes pasar el admin logueado
@@ -75,17 +77,33 @@ public class BuscarMedicoController {
         cmbFiltrar.setItems(FXCollections.observableArrayList("Nombre", "ID"));
         cmbFiltrar.setValue("Nombre");
 
-        cargarMedicos();
+        cargarMedicosAsync();
     }
 
-    private void cargarMedicos() {
-        try {
-            List<Medico> lista = medicoIntermediaria.listar(admin);
-            medicosObs = FXCollections.observableArrayList(lista);
-            tblMedicos.setItems(medicosObs);
-        } catch (Exception e) {
-            mostrarError("Error al cargar médicos: " + e.getMessage());
-        }
+    private void cargarMedicosAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return medicoIntermediaria.listar(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar médicos: " + e.getMessage(), e);
+                    }
+                },
+                lista -> {
+                    medicosObs = FXCollections.observableArrayList(lista);
+                    tblMedicos.setItems(medicosObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al cargar médicos: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -123,14 +141,35 @@ public class BuscarMedicoController {
                 "\nEspecialidad: " + seleccionado.getEspecialidad());
 
         if (confirmacion.showAndWait().get() == ButtonType.OK) {
-            try {
-                medicoIntermediaria.borrar(admin, seleccionado.getId());
-                mostrarInfo("Médico eliminado correctamente.");
-                cargarMedicos();
-            } catch (Exception e) {
-                mostrarError("Error al eliminar médico: " + e.getMessage());
-            }
+            eliminarMedicoAsync(seleccionado);
         }
+    }
+
+    private void eliminarMedicoAsync(Medico medico) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        medicoIntermediaria.borrar(admin, medico.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al eliminar: " + e.getMessage(), e);
+                    }
+                },
+                () -> {
+                    medicosObs.remove(medico);
+                    tblMedicos.refresh();
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Médico eliminado correctamente.");
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al eliminar médico: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -165,18 +204,33 @@ public class BuscarMedicoController {
 
     @FXML
     public void GenerarReporte(ActionEvent event) {
-        try {
-            // Obtener todos los médicos desde la base de datos
-            List<Medico> reporte = medicoIntermediaria.generarReporte(admin);
+        generarReporteAsync();
+    }
 
-            // Actualizar la tabla si tienes TableView, por ejemplo:
-            tblMedicos.getItems().setAll(reporte);
+    private void generarReporteAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            mostrarInfo("Reporte generado correctamente desde la base de datos.");
-
-        } catch (Exception e) {
-            mostrarError("Error al generar reporte: " + e.getMessage());
-        }
+        Async.Run(
+                () -> {
+                    try {
+                        return medicoIntermediaria.generarReporte(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+                    }
+                },
+                reporte -> {
+                    tblMedicos.getItems().setAll(reporte);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Reporte generado correctamente desde la base de datos.");
+                },
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al generar reporte: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -185,7 +239,7 @@ public class BuscarMedicoController {
         String filtro = cmbFiltrar.getValue();
 
         if (criterio.isEmpty()) {
-            cargarMedicos();
+            tblMedicos.setItems(medicosObs);
             return;
         }
 
@@ -245,5 +299,21 @@ public class BuscarMedicoController {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnAgregarMedico.setDisable(deshabilitar);
+        btnEliminarMedico.setDisable(deshabilitar);
+        btnEditarMedico.setDisable(deshabilitar);
+        btnBuscar.setDisable(deshabilitar);
+        btnReporte.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        cmbFiltrar.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 }

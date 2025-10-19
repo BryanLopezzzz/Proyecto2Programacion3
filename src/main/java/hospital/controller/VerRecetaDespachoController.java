@@ -58,29 +58,68 @@ public class VerRecetaDespachoController {
 
     @FXML
     public void setReceta(Receta receta) {
-        if (receta != null) {
-            if (receta.getPaciente() != null) {
-                lblPacienteId.setText(receta.getPaciente().getId());
-                lblPacienteNombre.setText(receta.getPaciente().getNombre());
-                lblPacienteNacimiento.setText(receta.getPaciente().getFechaNacimiento().toString());
-                lblPacienteTelefono.setText(receta.getPaciente().getTelefono());
-            }
-            if (receta.getMedico() != null) {
-                lblMedicoId.setText(receta.getMedico().getId());
-                lblMedicoNombre.setText(receta.getMedico().getNombre());
-                lblMedicoEspecialidad.setText(receta.getMedico().getEspecialidad());
-            }
-            if (receta.getDetalles() != null && !receta.getDetalles().isEmpty()) {
-                lblMedicamentoNombre.setText(receta.getPrimerMedicamento());
-                lblMedicamentoPresentacion.setText(receta.getPresentacionPrimerMedicamento());
-                lblMedicamentoCantidad.setText(String.valueOf(receta.getDetalles().get(0).getCantidad()));
-                lblMedicamentoDuracion.setText(String.valueOf(receta.getDetalles().get(0).getDiasTratamiento()));
-                lblIndicaciones.setText(receta.getDetalles().get(0).getIndicaciones());
-            }
-            lblRecetaConfeccion.setText(receta.getFechaConfeccion().toString());
-            lblRecetaRetiro.setText(receta.getFechaRetiro().toString());
-            lblRecetaEstado.setText(receta.getEstado().toString());
+        if (receta == null) {
+            Alerta.error("Error", "No se pudo cargar la receta.");
+            return;
         }
+
+        // Datos del paciente
+        if (receta.getPaciente() != null) {
+            lblPacienteId.setText(receta.getPaciente().getId() != null ?
+                    receta.getPaciente().getId() : "-");
+            lblPacienteNombre.setText(receta.getPaciente().getNombre() != null ?
+                    receta.getPaciente().getNombre() : "-");
+            // ← AQUÍ ESTÁ EL ERROR (línea 65)
+            lblPacienteNacimiento.setText(receta.getPaciente().getFechaNacimiento() != null ?
+                    receta.getPaciente().getFechaNacimiento().toString() : "-");
+            lblPacienteTelefono.setText(receta.getPaciente().getTelefono() != null ?
+                    receta.getPaciente().getTelefono() : "-");
+        } else {
+            lblPacienteId.setText("-");
+            lblPacienteNombre.setText("-");
+            lblPacienteNacimiento.setText("-");
+            lblPacienteTelefono.setText("-");
+        }
+
+        // Datos del médico
+        if (receta.getMedico() != null) {
+            lblMedicoId.setText(receta.getMedico().getId() != null ?
+                    receta.getMedico().getId() : "-");
+            lblMedicoNombre.setText(receta.getMedico().getNombre() != null ?
+                    receta.getMedico().getNombre() : "-");
+            lblMedicoEspecialidad.setText(receta.getMedico().getEspecialidad() != null ?
+                    receta.getMedico().getEspecialidad() : "-");
+        } else {
+            lblMedicoId.setText("-");
+            lblMedicoNombre.setText("-");
+            lblMedicoEspecialidad.setText("-");
+        }
+
+        // Datos del medicamento y detalle
+        if (receta.getDetalles() != null && !receta.getDetalles().isEmpty()) {
+            lblMedicamentoNombre.setText(receta.getPrimerMedicamento() != null ?
+                    receta.getPrimerMedicamento() : "-");
+            lblMedicamentoPresentacion.setText(receta.getPresentacionPrimerMedicamento() != null ?
+                    receta.getPresentacionPrimerMedicamento() : "-");
+            lblMedicamentoCantidad.setText(String.valueOf(receta.getDetalles().get(0).getCantidad()));
+            lblMedicamentoDuracion.setText(String.valueOf(receta.getDetalles().get(0).getDiasTratamiento()));
+            lblIndicaciones.setText(receta.getDetalles().get(0).getIndicaciones() != null ?
+                    receta.getDetalles().get(0).getIndicaciones() : "-");
+        } else {
+            lblMedicamentoNombre.setText("-");
+            lblMedicamentoPresentacion.setText("-");
+            lblMedicamentoCantidad.setText("-");
+            lblMedicamentoDuracion.setText("-");
+            lblIndicaciones.setText("-");
+        }
+
+        // Datos de la receta
+        lblRecetaConfeccion.setText(receta.getFechaConfeccion() != null ?
+                receta.getFechaConfeccion().toString() : "-");
+        lblRecetaRetiro.setText(receta.getFechaRetiro() != null ?
+                receta.getFechaRetiro().toString() : "-");
+        lblRecetaEstado.setText(receta.getEstado() != null ?
+                receta.getEstado().toString() : "-");
     }
 
     @FXML

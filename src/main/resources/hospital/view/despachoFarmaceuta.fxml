@@ -13,7 +13,7 @@
 <?import javafx.scene.text.Text?>
 
 <?import javafx.scene.control.ProgressIndicator?>
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="873.0" style="-fx-background-color: #ffffff;" stylesheets="@../../styles/table.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.DespachoController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="873.0" style="-fx-background-color: #ffffff;" stylesheets="@../../styles/table.css" xmlns="http://javafx.com/javafx/17.0.6" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.DespachoController">
    <children>
       <TextField id="txtBuscar" fx:id="txtBuscar" layoutX="214.0" layoutY="142.0" prefHeight="37.0" prefWidth="449.0" style="-fx-background-color: #ffffff; -fx-border-color: #b3b3b3; -fx-border-radius: 4;">
          <font>

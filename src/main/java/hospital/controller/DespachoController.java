@@ -209,6 +209,7 @@ public class DespachoController {
             stage.setTitle("Detalle de Receta");
             stage.show();
         } catch (Exception e) {
+            e.printStackTrace();
             Alerta.error("Error", "No se pudo cargar el detalle de la receta.");
         }
     }

@@ -70,7 +70,27 @@ public class RecetaDatos implements Plantilla {
 
     @Override
     public List<Object> findAll() throws SQLException {
-        String sql = "SELECT * FROM receta ORDER BY fecha DESC";
+        String sql = """
+            SELECT 
+                r.id,
+                r.paciente_id,
+                r.medico_id,
+                r.fecha,
+                r.fecha_retiro,
+                r.estado,
+                -- Datos del paciente
+                p.nombre AS paciente_nombre,
+                p.fecha_nacimiento AS paciente_fecha_nacimiento,
+                p.telefono AS paciente_telefono,
+                -- Datos del médico
+                m.nombre AS medico_nombre,
+                m.especialidad AS medico_especialidad
+            FROM receta r
+            INNER JOIN paciente p ON r.paciente_id = p.id
+            INNER JOIN medico m ON r.medico_id = m.id
+            ORDER BY r.fecha DESC
+            """;
+
         List<Object> lista = new ArrayList<>();
 
         try (Connection cn = DB.getConnection();
@@ -81,12 +101,19 @@ public class RecetaDatos implements Plantilla {
                 Receta receta = new Receta();
                 receta.setId(rs.getString("id"));
 
+                // Cargar datos completos del paciente
                 Paciente paciente = new Paciente();
                 paciente.setId(rs.getString("paciente_id"));
+                paciente.setNombre(rs.getString("paciente_nombre"));
+                paciente.setFechaNacimiento(rs.getDate("paciente_fecha_nacimiento").toLocalDate());
+                paciente.setTelefono(rs.getString("paciente_telefono"));
                 receta.setPaciente(paciente);
 
+                // Cargar datos completos del médico
                 Medico medico = new Medico();
                 medico.setId(rs.getString("medico_id"));
+                medico.setNombre(rs.getString("medico_nombre"));
+                medico.setEspecialidad(rs.getString("medico_especialidad"));
                 receta.setMedico(medico);
 
                 receta.setFecha(rs.getDate("fecha").toLocalDate());
@@ -113,7 +140,25 @@ public class RecetaDatos implements Plantilla {
     public List<Receta> listarRecetasPorPaciente(String idPaciente) throws SQLException {
         List<Receta> recetas = new ArrayList<>();
 
-        String sql = "SELECT * FROM receta WHERE idPaciente = ?";
+        String sql = """
+            SELECT 
+                r.id,
+                r.paciente_id,
+                r.medico_id,
+                r.fecha,
+                r.fecha_retiro,
+                r.estado,
+                p.nombre AS paciente_nombre,
+                p.fecha_nacimiento AS paciente_fecha_nacimiento,
+                p.telefono AS paciente_telefono,
+                m.nombre AS medico_nombre,
+                m.especialidad AS medico_especialidad
+            FROM receta r
+            INNER JOIN paciente p ON r.paciente_id = p.id
+            INNER JOIN medico m ON r.medico_id = m.id
+            WHERE r.paciente_id = ?
+            """;
+
         try (Connection cn = DB.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
 
@@ -122,22 +167,28 @@ public class RecetaDatos implements Plantilla {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Receta receta = new Receta();
-
                     receta.setId(rs.getString("id"));
                     receta.setFecha(rs.getDate("fecha").toLocalDate());
                     receta.setEstado(EstadoReceta.valueOf(rs.getString("estado")));
 
-                    Date fechaRetiroSql = rs.getDate("fechaRetiro");
+                    Date fechaRetiroSql = rs.getDate("fecha_retiro");
                     if (fechaRetiroSql != null) {
                         receta.setFechaRetiro(fechaRetiroSql.toLocalDate());
                     }
 
+                    // Cargar datos completos del paciente
                     Paciente paciente = new Paciente();
-                    paciente.setId(rs.getString("idPaciente"));
+                    paciente.setId(rs.getString("paciente_id"));
+                    paciente.setNombre(rs.getString("paciente_nombre"));
+                    paciente.setFechaNacimiento(rs.getDate("paciente_fecha_nacimiento").toLocalDate());
+                    paciente.setTelefono(rs.getString("paciente_telefono"));
                     receta.setPaciente(paciente);
 
+                    // Cargar datos completos del médico
                     Medico medico = new Medico();
-                    medico.setId(rs.getString("idMedico"));
+                    medico.setId(rs.getString("medico_id"));
+                    medico.setNombre(rs.getString("medico_nombre"));
+                    medico.setEspecialidad(rs.getString("medico_especialidad"));
                     receta.setMedico(medico);
 
                     List<DetalleReceta> detalles = listarDetallesPorReceta(receta.getId());
@@ -150,7 +201,6 @@ public class RecetaDatos implements Plantilla {
 
         return recetas;
     }
-
     private List<DetalleReceta> listarDetallesPorReceta(String idReceta) throws SQLException {
         List<DetalleReceta> detalles = new ArrayList<>();
 

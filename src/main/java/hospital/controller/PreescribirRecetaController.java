@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.RecetaLogica;
 import hospital.model.*;
 import hospital.controller.busqueda.BuscarPacientePreescripcionController;
@@ -24,22 +25,40 @@ import java.util.UUID;
 
 public class PreescribirRecetaController {
 
-    @FXML private TextField txtFechaConfeccion;
-    @FXML private TextField txtBuscarPaciente;
-    @FXML private Button btnBuscarPaciente;
-    @FXML private DatePicker dtpFechaRetiro;
-    @FXML private TableView<DetalleReceta> tblRecetas;
-    @FXML private TableColumn<DetalleReceta, String> colNombreMedicamento;
-    @FXML private TableColumn<DetalleReceta, String> colIndicaciones;
-    @FXML private TableColumn<DetalleReceta, String> colPresentacion;
-    @FXML private TableColumn<DetalleReceta, Integer> conCantidad;
-    @FXML private TableColumn<DetalleReceta, Integer> colDuracion;
-    @FXML private Button btnAgregarReceta;
-    @FXML private Button btnEliminarReceta;
-    @FXML private Button btnEditarReceta;
-    @FXML private Button btnVolver;
-    @FXML private Button btnPreescribir;
-    @FXML private Button btnLimpiarTodo;  // Nuevo botón para limpiar manualmente
+    @FXML
+    private TextField txtFechaConfeccion;
+    @FXML
+    private TextField txtBuscarPaciente;
+    @FXML
+    private Button btnBuscarPaciente;
+    @FXML
+    private DatePicker dtpFechaRetiro;
+    @FXML
+    private TableView<DetalleReceta> tblRecetas;
+    @FXML
+    private TableColumn<DetalleReceta, String> colNombreMedicamento;
+    @FXML
+    private TableColumn<DetalleReceta, String> colIndicaciones;
+    @FXML
+    private TableColumn<DetalleReceta, String> colPresentacion;
+    @FXML
+    private TableColumn<DetalleReceta, Integer> conCantidad;
+    @FXML
+    private TableColumn<DetalleReceta, Integer> colDuracion;
+    @FXML
+    private Button btnAgregarReceta;
+    @FXML
+    private Button btnEliminarReceta;
+    @FXML
+    private Button btnEditarReceta;
+    @FXML
+    private Button btnVolver;
+    @FXML
+    private Button btnPreescribir;
+    @FXML
+    private Button btnLimpiarTodo;
+    @FXML
+    private ProgressIndicator progressIndicator;
 
     private ObservableList<DetalleReceta> listaDetalles = FXCollections.observableArrayList();
     private final RecetaLogica recetaIntermediaria = new RecetaLogica();
@@ -52,8 +71,11 @@ public class PreescribirRecetaController {
         configurarTabla();
         configurarFechaConfeccion();
         configurarFechaRetiro();
-        cargarDatosPersistentes(); // Cargar datos si existen
+        cargarDatosPersistentes();
 
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
         tblRecetas.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             boolean hay = newSel != null;
             btnEliminarReceta.setDisable(!hay);
@@ -89,7 +111,6 @@ public class PreescribirRecetaController {
     }
 
     private void configurarFechaRetiro() {
-        // Solo configurar si no hay fecha ya establecida
         if (dtpFechaRetiro.getValue() == null) {
             dtpFechaRetiro.setValue(LocalDate.now().plusDays(7));
         }
@@ -124,7 +145,6 @@ public class PreescribirRecetaController {
 
             Paciente pacienteNuevo = buscarView.getPacienteSeleccionado();
             if (pacienteNuevo != null) {
-                // Solo cambiar si es diferente al actual
                 if (pacienteSeleccionado == null || !pacienteSeleccionado.getId().equals(pacienteNuevo.getId())) {
                     pacienteSeleccionado = pacienteNuevo;
                     txtBuscarPaciente.setText(pacienteSeleccionado.getNombre() + " (" + pacienteSeleccionado.getId() + ")");
@@ -134,14 +154,14 @@ public class PreescribirRecetaController {
             }
 
         } catch (IOException e) {
-            mostrarError("Error", "No se pudo abrir la ventana de búsqueda de pacientes: " + e.getMessage());
+            Alerta.error("Error", "No se pudo abrir la ventana de búsqueda de pacientes: " + e.getMessage());
         }
     }
 
     @FXML
     private void AgregarReceta(ActionEvent event) {
         if (medico == null) {
-            mostrarError("Acceso denegado", "Debe estar autenticado como médico para preescribir recetas.");
+            Alerta.error("Acceso denegado", "Debe estar autenticado como médico para preescribir recetas.");
             return;
         }
 
@@ -150,7 +170,6 @@ public class PreescribirRecetaController {
                 crearRecetaTemporal();
             }
 
-            // Buscar medicamento
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/buscarMedicamentoPrescripcion.fxml"));
             Parent root = loader.load();
             BuscarMedicamentoPreescripcionController buscarView = loader.getController();
@@ -167,7 +186,6 @@ public class PreescribirRecetaController {
                 return;
             }
 
-            // Verificar si el medicamento ya está en la lista
             boolean yaExiste = listaDetalles.stream()
                     .anyMatch(d -> d.getMedicamento() != null &&
                             d.getMedicamento().getCodigo().equals(seleccionado.getCodigo()));
@@ -184,7 +202,6 @@ public class PreescribirRecetaController {
                 }
             }
 
-            // Abrir detalle
             FXMLLoader detalleLoader = new FXMLLoader(getClass().getResource("/hospital/view/detalleReceta.fxml"));
             Parent detalleRoot = detalleLoader.load();
             DetalleRecetaController detalleView = detalleLoader.getController();
@@ -206,7 +223,7 @@ public class PreescribirRecetaController {
             }
 
         } catch (IOException e) {
-            mostrarError("Error", "No se pudo abrir la ventana de selección de medicamentos: " + e.getMessage());
+            Alerta.error("Error", "No se pudo abrir la ventana de selección de medicamentos: " + e.getMessage());
         }
     }
 
@@ -242,7 +259,7 @@ public class PreescribirRecetaController {
             return;
         }
         if (medico == null) {
-            mostrarError("Acceso denegado", "Debe estar autenticado como médico para editar la receta.");
+            Alerta.error("Acceso denegado", "Debe estar autenticado como médico para editar la receta.");
             return;
         }
 
@@ -282,7 +299,7 @@ public class PreescribirRecetaController {
             }
 
         } catch (IOException e) {
-            mostrarError("Error", "No se pudo abrir el formulario de edición: " + e.getMessage());
+            Alerta.error("Error", "No se pudo abrir el formulario de edición: " + e.getMessage());
         }
     }
 
@@ -293,7 +310,7 @@ public class PreescribirRecetaController {
             return;
         }
         if (medico == null) {
-            mostrarError("Acceso denegado", "Debe estar autenticado como médico para preescribir recetas.");
+            Alerta.error("Acceso denegado", "Debe estar autenticado como médico para preescribir recetas.");
             return;
         }
         if (dtpFechaRetiro.getValue() == null) {
@@ -309,32 +326,64 @@ public class PreescribirRecetaController {
             return;
         }
 
-        try {
-            Receta receta = new Receta();
-            receta.setId(recetaActual != null ? recetaActual.getId() : generarIdReceta());
-            receta.setPaciente(pacienteSeleccionado);
-            receta.setMedico(medico);
-            receta.setFecha(LocalDate.now());
-            receta.setFechaRetiro(dtpFechaRetiro.getValue());
-            receta.setEstado(EstadoReceta.CONFECCIONADA);
-
-            for (DetalleReceta d : listaDetalles) {
-                receta.agregarDetalle(d);
-            }
-// se quito el medico del parametro, si no sirve hay que ponerlo again
-            recetaIntermediaria.crearReceta(receta);
-
-            mostrarInformacion("Éxito", "Receta preescrita correctamente con ID: " + receta.getId());
-
-            // Limpiar formulario para la siguiente receta
-            limpiarFormulario();
-
-        } catch (Exception e) {
-            mostrarError("Error al preescribir", e.getMessage());
-        }
+        preescribirAsync();
     }
 
-        @FXML
+    private void preescribirAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        final String recetaId = recetaActual != null ? recetaActual.getId() : generarIdReceta();
+        final Paciente paciente = pacienteSeleccionado;
+        final Medico medicoRef = medico;
+        final LocalDate fechaRetiro = dtpFechaRetiro.getValue();
+        final ObservableList<DetalleReceta> detallesCopia = FXCollections.observableArrayList(listaDetalles);
+
+        Async.Run(
+                () -> {
+                    try {
+                        Receta receta = new Receta();
+                        receta.setId(recetaId);
+                        receta.setPaciente(paciente);
+                        receta.setMedico(medicoRef);
+                        receta.setFecha(LocalDate.now());
+                        receta.setFechaRetiro(fechaRetiro);
+                        receta.setEstado(EstadoReceta.CONFECCIONADA);
+
+                        for (DetalleReceta d : detallesCopia) {
+                            receta.agregarDetalle(d);
+                        }
+
+                        recetaIntermediaria.crearReceta(receta);
+                        return receta;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
+
+                // OnSuccess
+                receta -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    mostrarInformacion("Éxito",
+                            "Receta preescrita correctamente con ID: " + receta.getId() + "\n" +
+                                    "Paciente: " + receta.getPaciente().getNombre() + "\n" +
+                                    "Medicamentos: " + receta.getDetalles().size());
+
+                    limpiarFormulario();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error al preescribir", error.getMessage());
+                }
+        );
+    }
+
+    @FXML
     private void Volver(ActionEvent event) {
         Stage stage = (Stage) btnVolver.getScene().getWindow();
         try {
@@ -344,7 +393,7 @@ public class PreescribirRecetaController {
             stage.setTitle("Dashboard");
             stage.show();
         } catch (IOException e) {
-            mostrarError("Error", "No se pudo cargar el dashboard: " + e.getMessage());
+            Alerta.error("Error", "No se pudo cargar el dashboard: " + e.getMessage());
         }
     }
 
@@ -381,7 +430,6 @@ public class PreescribirRecetaController {
         configurarFechaConfeccion();
         actualizarEstadoBotones();
 
-        System.out.println("Formulario limpiado completamente");
     }
 
     public void agregarDetalleReceta(DetalleReceta detalle) {
@@ -390,33 +438,42 @@ public class PreescribirRecetaController {
             if (recetaActual != null) {
                 recetaActual.agregarDetalle(detalle);
             }
-            System.out.println("Detalle agregado. Total: " + listaDetalles.size());
         }
     }
 
-    // Getters
-    public Receta getRecetaActual() { return recetaActual; }
-    public Paciente getPacienteSeleccionado() { return pacienteSeleccionado; }
-
-    // Métodos de UI
-    private void mostrarError(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    public Receta getRecetaActual() {
+        return recetaActual;
     }
 
-    private void mostrarAdvertencia(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    public Paciente getPacienteSeleccionado() {
+        return pacienteSeleccionado;
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnBuscarPaciente.setDisable(deshabilitar);
+        btnAgregarReceta.setDisable(deshabilitar);
+        btnEliminarReceta.setDisable(deshabilitar);
+        btnEditarReceta.setDisable(deshabilitar);
+        btnPreescribir.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+        dtpFechaRetiro.setDisable(deshabilitar);
+    }
+//Estis hay que unirlos a la clase Alerta para generar un codigo más limpio
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 
     private void mostrarInformacion(String titulo, String mensaje) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
+    private void mostrarAdvertencia(String titulo, String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);

@@ -176,7 +176,6 @@ public class RegistroPacienteController {
         }
     }
 
-        // Métodos utilitarios para mostrar alertas
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");

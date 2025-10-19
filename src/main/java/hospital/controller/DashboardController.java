@@ -1,11 +1,13 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.DashboardLogica;
 import hospital.logica.LoginLogica;
 import hospital.logica.Sesion;
 import hospital.logica.UsuarioManager;
 import hospital.model.Medico;
 import hospital.model.Usuario;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -20,6 +22,8 @@ import javafx.scene.layout.Pane;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.YearMonth;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class DashboardController {
     @FXML
@@ -61,6 +65,9 @@ public class DashboardController {
     @FXML
     private Pane panePieChart;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final DashboardLogica dashboardLogica = new DashboardLogica();
     private final UsuarioManager usuarioManager = new UsuarioManager();
     private LoginLogica loginLogica;
@@ -79,9 +86,47 @@ public class DashboardController {
         if (usuario != null && lblUsuario != null) {
             lblUsuario.setText(usuario.getNombre());
         }
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
         configurarPermisosPorRol(usuario);
-        mostrarGraficoLineas(usuario);
-        mostrarGraficoPastel(usuario);
+        cargarGraficosAsync(usuario);
+    }
+
+    private void cargarGraficosAsync(Usuario usuario) {
+        if (usuario == null) return;
+
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        Map<String, Integer> datosLineas = dashboardLogica.contarMedicamentosPorMes(
+                                usuario,
+                                YearMonth.now().minusMonths(5),
+                                YearMonth.now()
+                        );
+
+                        Map<String, Long> datosPastel = dashboardLogica.contarRecetasPorEstado(usuario);
+
+                        return new DatosGraficos(datosLineas, datosPastel);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar estadísticas: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                datos -> {
+                    mostrarGraficoLineas(usuario, datos.datosLineas);
+                    mostrarGraficoPastel(usuario, datos.datosPastel);
+                    mostrarCargando(false);
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    mostrarGraficoLineas(usuario, new LinkedHashMap<>());
+                    mostrarGraficoPastel(usuario, new LinkedHashMap<>());
+                }
+        );
     }
     private void configurarPermisosPorRol(Usuario usuario) throws SQLException {
         if (usuario == null || usuario.getId() == null) {
@@ -123,14 +168,12 @@ public class DashboardController {
     }
 
     private void configurarPermisosMedico() {
-        // Deshabilitar funciones no permitidas
         btnMedicos.setDisable(true);
         btnFarmaceutas.setDisable(true);
         btnPacientes.setDisable(true);
         btnMedicamentos.setDisable(true);
         btnDespachoReceta.setDisable(true);
 
-        // Habilitar funciones permitidas
         btnPrescribirReceta.setDisable(false);
         btnHistoricoRecetas.setDisable(false);
         btnCambiarClave.setDisable(false);
@@ -139,14 +182,12 @@ public class DashboardController {
     }
 
     private void configurarPermisosFarmaceuta() {
-        // Deshabilitar funciones no permitidas
         btnMedicos.setDisable(true);
         btnFarmaceutas.setDisable(true);
         btnPacientes.setDisable(true);
         btnMedicamentos.setDisable(true);
         btnPrescribirReceta.setDisable(true);
 
-        // Habilitar funciones permitidas
         btnDespachoReceta.setDisable(false);
         btnHistoricoRecetas.setDisable(false);
         btnCambiarClave.setDisable(false);
@@ -162,59 +203,64 @@ public class DashboardController {
         btnPrescribirReceta.setDisable(true);
         btnDespachoReceta.setDisable(true);
 
-        // Funciones básicas siempre deshabilitadas si no hay usuario reconocido
         btnHistoricoRecetas.setDisable(true);
         btnCambiarClave.setDisable(true);
         btnAcercaDe.setDisable(true);
         btnLogout.setDisable(true);
     }
 
-    private void mostrarGraficoLineas(Usuario usuario) {
+    private void mostrarGraficoLineas(Usuario usuario, Map<String, Integer> datos) {
         if (usuario == null) return;
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        LineChart<String, Number> lineChart = new LineChart<>(xAxis, yAxis);
-        lineChart.setTitle("Medicamentos por mes");
-        lineChart.setPrefWidth(350);
-        lineChart.setPrefHeight(250);
 
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Medicamentos");
+        Platform.runLater(() -> {
+            CategoryAxis xAxis = new CategoryAxis();
+            NumberAxis yAxis = new NumberAxis();
+            LineChart<String, Number> lineChart = new LineChart<>(xAxis, yAxis);
+            lineChart.setTitle("Medicamentos por mes");
+            lineChart.setPrefWidth(350);
+            lineChart.setPrefHeight(250);
 
-        try {
-            var datos = dashboardLogica.contarMedicamentosPorMes(
-                    usuario,
-                    YearMonth.now().minusMonths(5),
-                    YearMonth.now()
-            );
-            datos.forEach((mes, cantidad) -> series.getData().add(new XYChart.Data<>(mes, cantidad)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            XYChart.Series<String, Number> series = new XYChart.Series<>();
+            series.setName("Medicamentos");
 
-        lineChart.getData().add(series);
-        paneLineChart.getChildren().clear();
-        paneLineChart.getChildren().add(lineChart);
+            if (datos != null && !datos.isEmpty()) {
+                datos.forEach((mes, cantidad) ->
+                        series.getData().add(new XYChart.Data<>(mes, cantidad))
+                );
+            } else {
+                series.getData().add(new XYChart.Data<>("Sin datos", 0));
+            }
+
+            lineChart.getData().add(series);
+            paneLineChart.getChildren().clear();
+            paneLineChart.getChildren().add(lineChart);
+        });
     }
 
-    private void mostrarGraficoPastel(Usuario usuario) {
+    private void mostrarGraficoPastel(Usuario usuario, Map<String, Long> datos) {
         if (usuario == null) return;
-        PieChart pieChart = new PieChart();
-        pieChart.setTitle("Recetas por estado");
-        pieChart.setPrefWidth(350);
-        pieChart.setPrefHeight(250);
 
-        try {
-            var datos = dashboardLogica.contarRecetasPorEstado(usuario);
-            datos.forEach((estado, cantidad) ->
-                    pieChart.getData().add(new PieChart.Data(estado, cantidad))
-            );
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Platform.runLater(() -> {
+            PieChart pieChart = new PieChart();
+            pieChart.setTitle("Recetas por estado");
+            pieChart.setPrefWidth(350);
+            pieChart.setPrefHeight(250);
 
-        panePieChart.getChildren().clear();
-        panePieChart.getChildren().add(pieChart);
+            if (datos != null && !datos.isEmpty()) {
+                datos.forEach((estado, cantidad) -> {
+                    if (cantidad > 0) {
+                        pieChart.getData().add(new PieChart.Data(estado, cantidad));
+                    }
+                });
+            }
+
+            if (pieChart.getData().isEmpty()) {
+                pieChart.getData().add(new PieChart.Data("Sin datos", 1));
+            }
+
+            panePieChart.getChildren().clear();
+            panePieChart.getChildren().add(pieChart);
+        });
     }
 
     @FXML
@@ -282,7 +328,6 @@ public class DashboardController {
         try {
             Usuario usuarioActual = Sesion.getUsuario();
 
-            // Verificar que el usuario sea realmente un médico
             UsuarioManager.TipoUsuario tipo = usuarioManager.determinarTipoUsuario(usuarioActual.getId());
             if (tipo != UsuarioManager.TipoUsuario.MEDICO) {
                 Alerta.error("Acceso denegado", "Solo los médicos pueden prescribir recetas.");
@@ -292,14 +337,11 @@ public class DashboardController {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/prescribirReceta.fxml"));
             Scene scene = new Scene(fxmlLoader.load());
 
-            // Obtener el controlador y configurar el médico
             PreescribirRecetaController controller = fxmlLoader.getController();
 
-            // Crear objeto Medico con los datos del usuario autenticado
             Medico medico = new Medico();
             medico.setId(usuarioActual.getId());
             medico.setNombre(usuarioActual.getNombre());
-            // Agregar otros campos necesarios según tu modelo Medico
 
             controller.setMedico(medico);
 
@@ -394,4 +436,20 @@ public class DashboardController {
            Alerta.error("Error","Error al regresar al login");
         }
     }
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            Platform.runLater(() -> progressIndicator.setVisible(mostrar));
+        }
+    }
+
+    private static class DatosGraficos {
+        final Map<String, Integer> datosLineas;
+        final Map<String, Long> datosPastel;
+
+        DatosGraficos(Map<String, Integer> datosLineas, Map<String, Long> datosPastel) {
+            this.datosLineas = datosLineas;
+            this.datosPastel = datosPastel;
+        }
+    }
+
 }

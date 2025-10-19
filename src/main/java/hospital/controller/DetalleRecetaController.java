@@ -18,18 +18,14 @@ public class DetalleRecetaController {
     @FXML private Button btnAgregar;
     @FXML private Button btnVolver;
 
-    // Contexto pasado desde quien abre esta ventana
     private Medico medico;
     private String recetaId;
     private String medicamentoId;
 
-    // Controller para obtener datos completos del medicamento
     private final MedicamentoLogica medicamentoIntermediaria = new MedicamentoLogica();
 
-    // Resultado que el padre leerá al cerrar la ventana
     private DetalleReceta detalleCreado;
 
-    // Modo (edición) si se pasa un Detalle existente
     private boolean modoEdicion = false;
     private DetalleReceta detalleEditable;
 
@@ -39,7 +35,6 @@ public class DetalleRecetaController {
         this.medicamentoId = medicamentoId;
     }
 
-    /** Llamar si queremos editar un detalle ya existente. */
     public void setDetalleParaEditar(DetalleReceta detalle) {
         if (detalle == null) return;
         this.modoEdicion = true;
@@ -50,7 +45,6 @@ public class DetalleRecetaController {
         txtIndicaciones.setText(detalle.getIndicaciones());
     }
 
-    /** Versión para mostrar solo lectura (si la abriste con setReceta). */
     public void setReceta(Receta receta) {
         // modo solo lectura: deshabilitar todo si lo requiere
         txtCantidad.setEditable(false);
@@ -80,7 +74,6 @@ public class DetalleRecetaController {
                 detalleEditable.setIndicaciones(indicaciones);
                 this.detalleCreado = detalleEditable;
             } else {
-                // crear nuevo detalle y obtener medicamento completo
                 DetalleReceta nuevo = new DetalleReceta();
                 nuevo.setCantidad(cantidad);
                 nuevo.setDiasTratamiento(dias);

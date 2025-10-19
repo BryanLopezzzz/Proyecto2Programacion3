@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.LoginLogica;
 import hospital.model.Usuario;
 import javafx.fxml.FXML;
@@ -7,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -58,6 +60,9 @@ public class CambioClaveController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private Usuario usuario;
     private LoginLogica loginLogica;
 
@@ -68,6 +73,9 @@ public class CambioClaveController {
         setupPasswordToggle(txtContrasenaAnterior, txtContrasenaAnteriorVisible, btnVerAnterior, iconVerAnterior);
         setupPasswordToggle(txtNuevaContrasena, txtNuevaContrasenaVisible, btnVerNueva, iconVerNueva);
         setupPasswordToggle(txtConfirmarContrasena, txtConfirmarContrasenaVisible, btnVerConfirmar, iconVerConfirmar);
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     private void setupPasswordToggle(PasswordField passwordField, TextField textField, Button button, ImageView icon) {
@@ -108,20 +116,59 @@ public class CambioClaveController {
             Alerta.error("Error", "La confirmación no coincide con la nueva contraseña.");
             return;
         }
-
-        try {
-            loginLogica.cambiarClave(actual, nueva);
-            Alerta.info("Éxito", "Contraseña cambiada correctamente.");
-            limpiarCampos();
-        } catch (Exception e) {
-            Alerta.error("Error", e.getMessage());
+        if (nueva.length() < 4) {
+            Alerta.error("Error", "La nueva contraseña debe tener al menos 4 caracteres.");
+            return;
         }
+
+        cambiarContrasenaAsync(actual, nueva);
+    }
+
+    private void cambiarContrasenaAsync(String actual, String nueva) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        loginLogica.cambiarClave(actual, nueva);
+                        return "Contraseña cambiada exitosamente";
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
+
+                // OnSuccess
+                mensaje -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    Alerta.info("Éxito", mensaje);
+                    limpiarCampos();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    Alerta.error("Error", error.getMessage());
+
+                    // Se limpia solo el campo de contraseña actual por seguridad
+                    txtContrasenaAnterior.clear();
+                    txtContrasenaAnteriorVisible.clear();
+                    txtContrasenaAnterior.requestFocus();
+                }
+        );
     }
 
     private void limpiarCampos() {
         txtContrasenaAnterior.clear();
         txtNuevaContrasena.clear();
         txtConfirmarContrasena.clear();
+        txtContrasenaAnteriorVisible.clear();
+        txtNuevaContrasenaVisible.clear();
+        txtConfirmarContrasenaVisible.clear();
     }
 
     @FXML
@@ -130,10 +177,8 @@ public class CambioClaveController {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/dashboard.fxml"));
             Scene scene = new Scene(fxmlLoader.load());
 
-            // Aquí es importante obtener la instancia correcta del LoginController
-            // Si DashboardView lo necesita, hay que pasarlo.
             DashboardController dashboardController = fxmlLoader.getController();
-            dashboardController.setLoginController(this.loginLogica); // Re-establecer el controlador de login
+            dashboardController.setLoginController(this.loginLogica);
 
             Stage stage = (Stage) btnVolver.getScene().getWindow();
             stage.setScene(scene);
@@ -142,6 +187,26 @@ public class CambioClaveController {
         } catch (IOException e) {
             e.printStackTrace();
             Alerta.error("Error", "Error al volver al dashboard: " + e.getMessage());
+        }
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtContrasenaAnterior.setDisable(deshabilitar);
+        txtContrasenaAnteriorVisible.setDisable(deshabilitar);
+        txtNuevaContrasena.setDisable(deshabilitar);
+        txtNuevaContrasenaVisible.setDisable(deshabilitar);
+        txtConfirmarContrasena.setDisable(deshabilitar);
+        txtConfirmarContrasenaVisible.setDisable(deshabilitar);
+        btnCambiar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+        btnVerAnterior.setDisable(deshabilitar);
+        btnVerNueva.setDisable(deshabilitar);
+        btnVerConfirmar.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
         }
     }
 }

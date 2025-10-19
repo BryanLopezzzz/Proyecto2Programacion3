@@ -1,5 +1,6 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.controller.EditarFarmaceutaController;
 import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
@@ -51,6 +52,9 @@ public class BuscarFarmaceutaController {
     @FXML
     private Button btnBuscar;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
     private final Administrador admin = new Administrador();
 
@@ -58,27 +62,46 @@ public class BuscarFarmaceutaController {
 
     @FXML
     public void initialize() {
-        // Configurar columnas
         colIdentificacion.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().getId()));
         colNombre.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().getNombre()));
 
-        // Inicializar filtro
         btnFiltrar.setItems(FXCollections.observableArrayList("ID", "Nombre"));
         btnFiltrar.setValue("ID");
 
-        cargarFarmaceutas();
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
+        cargarFarmaceutasAsync();
     }
 
-    private void cargarFarmaceutas() {
-        try {
-            List<Farmaceuta> lista = farmaceutaIntermediaria.listar(admin);
-            farmaceutasObs = FXCollections.observableArrayList(lista);
-            tblFarmaceutas.setItems(farmaceutasObs);
-        } catch (Exception e) {
-            mostrarError("Error al cargar farmaceutas: " + e.getMessage());
-        }
+    private void cargarFarmaceutasAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return farmaceutaIntermediaria.listar(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar farmaceutas: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                lista -> {
+                    farmaceutasObs = FXCollections.observableArrayList(lista);
+                    tblFarmaceutas.setItems(farmaceutasObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error al cargar farmaceutas: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -99,7 +122,7 @@ public class BuscarFarmaceutaController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de agregar farmaceuta: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de agregar farmaceuta: " + e.getMessage());
         }
     }
 
@@ -107,7 +130,7 @@ public class BuscarFarmaceutaController {
     public void EliminarFarmaceuta(ActionEvent event) {
         Farmaceuta seleccionado = tblFarmaceutas.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un farmaceuta para eliminar.");
+            Alerta.error("Error","Debe seleccionar un farmaceuta para eliminar.");
             return;
         }
 
@@ -117,21 +140,44 @@ public class BuscarFarmaceutaController {
         confirmacion.setContentText("Farmaceuta: " + seleccionado.getNombre() + " (ID: " + seleccionado.getId() + ")");
 
         if (confirmacion.showAndWait().get() == ButtonType.OK) {
-            try {
-                farmaceutaIntermediaria.borrar(admin, seleccionado.getId());
-                mostrarInfo("Farmaceuta eliminado correctamente.");
-                cargarFarmaceutas();
-            } catch (Exception e) {
-                mostrarError("Error al eliminar farmaceuta: " + e.getMessage());
-            }
+            eliminarFarmaceutaAsync(seleccionado);
         }
+    }
+
+    private void eliminarFarmaceutaAsync(Farmaceuta farmaceuta) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        farmaceutaIntermediaria.borrar(admin, farmaceuta.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al eliminar: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                () -> {
+                    farmaceutasObs.remove(farmaceuta);
+                    tblFarmaceutas.refresh();
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.info("Éxito", "Farmaceuta eliminado correctamente.");
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error al eliminar farmaceuta: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
     public void EditarFarmaceuta(ActionEvent event) {
         Farmaceuta seleccionado = tblFarmaceutas.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un farmaceuta para editar.");
+            Alerta.error("Error","Debe seleccionar un farmaceuta para editar.");
             return;
         }
 
@@ -149,19 +195,41 @@ public class BuscarFarmaceutaController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de edición: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de edición: " + e.getMessage());
         }
     }
 
     @FXML
     public void GenerarReporte(ActionEvent event) {
-        try {
-            List<Farmaceuta> reporte = farmaceutaIntermediaria.generarReporte(admin);
-            tblFarmaceutas.getItems().setAll(reporte);
-            mostrarInfo("Reporte generado correctamente.");
-        } catch (Exception e) {
-            mostrarError("Error al generar reporte: " + e.getMessage());
-        }
+        generarReporteAsync();
+    }
+
+    private void generarReporteAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return farmaceutaIntermediaria.generarReporte(admin);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al generar reporte: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                reporte -> {
+                    tblFarmaceutas.getItems().setAll(reporte);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.info("Éxito", "Reporte generado correctamente.");
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error al generar reporte: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -170,29 +238,50 @@ public class BuscarFarmaceutaController {
         String filtro = btnFiltrar.getValue();
 
         if (criterio.isEmpty()) {
-            cargarFarmaceutas();
+            cargarFarmaceutasAsync();
             return;
         }
 
-        try {
-            List<Farmaceuta> resultados;
-            if ("Nombre".equalsIgnoreCase(filtro)) {
-                resultados = farmaceutaIntermediaria.buscarPorNombre(admin, criterio);
-            } else {
-                Farmaceuta f = farmaceutaIntermediaria.buscarPorId(admin, criterio);
-                resultados = (f != null) ? List.of(f) : List.of();
-            }
+        buscarFarmaceutasAsync(criterio, filtro);
+    }
 
-            farmaceutasObs = FXCollections.observableArrayList(resultados);
-            tblFarmaceutas.setItems(farmaceutasObs);
+    private void buscarFarmaceutasAsync(String criterio, String filtro) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            if (resultados.isEmpty()) {
-                mostrarInfo("No se encontraron farmaceutas con el criterio especificado.");
-            }
+        Async.Run(
+                () -> {
+                    try {
+                        List<Farmaceuta> resultados;
+                        if ("Nombre".equalsIgnoreCase(filtro)) {
+                            resultados = farmaceutaIntermediaria.buscarPorNombre(admin, criterio);
+                        } else { // ID
+                            Farmaceuta f = farmaceutaIntermediaria.buscarPorId(admin, criterio);
+                            resultados = (f != null) ? List.of(f) : List.of();
+                        }
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error en búsqueda: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                resultados -> {
+                    farmaceutasObs = FXCollections.observableArrayList(resultados);
+                    tblFarmaceutas.setItems(farmaceutasObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
 
-        } catch (Exception e) {
-            mostrarError("Error en búsqueda: " + e.getMessage());
-        }
+                    if (resultados.isEmpty()) {
+                        Alerta.info("Búsqueda", "No se encontraron farmaceutas con el criterio especificado.");
+                    }
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error en búsqueda: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -206,23 +295,23 @@ public class BuscarFarmaceutaController {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al cargar el dashboard.");
+            Alerta.error("Error","Error al cargar el dashboard.");
         }
     }
 
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnAgregarFarmaceuta.setDisable(deshabilitar);
+        btnEliminar.setDisable(deshabilitar);
+        btnEditar.setDisable(deshabilitar);
+        btnBuscar.setDisable(deshabilitar);
+        btnReporte.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        btnFiltrar.setDisable(deshabilitar);
     }
 
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 }

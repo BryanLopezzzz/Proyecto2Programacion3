@@ -1,8 +1,10 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
 import hospital.model.Paciente;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -12,6 +14,8 @@ import javafx.stage.Stage;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 public class BuscarPacientePreescripcionController {
@@ -43,6 +47,9 @@ public class BuscarPacientePreescripcionController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
     private final Administrador admin = new Administrador();
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -50,11 +57,15 @@ public class BuscarPacientePreescripcionController {
     private ObservableList<Paciente> pacientesObs;
     private ObservableList<Paciente> todosPacientes;
     private Paciente pacienteSeleccionado;
+    private Timer searchTimer;
 
     @FXML
     public void initialize() {
         configurarColumnas();
         configurarFiltro();
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
         cargarPacientesAsync();
         configurarBusquedaEnTiempoReal();
         configurarDobleClick();
@@ -81,6 +92,9 @@ public class BuscarPacientePreescripcionController {
 
 
     private void cargarPacientesAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
         Async.Run(
                 () -> {
                     try {
@@ -94,16 +108,38 @@ public class BuscarPacientePreescripcionController {
                     pacientesObs = FXCollections.observableArrayList(lista);
                     todosPacientes = FXCollections.observableArrayList(lista);
                     tableMedicos.setItems(pacientesObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
                 },
                 // OnError
                 error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
                     mostrarError("Error al cargar pacientes: " + error.getMessage());
+
+                    pacientesObs = FXCollections.observableArrayList();
+                    todosPacientes = FXCollections.observableArrayList();
+                    tableMedicos.setItems(pacientesObs);
                 }
         );
     }
 
     private void configurarBusquedaEnTiempoReal() {
-        txtBuscar.textProperty().addListener((obs, oldVal, newVal) -> BuscarPaciente(null));
+        txtBuscar.textProperty().addListener((observable, oldValue, newValue) -> {
+            // Cancelar búsqueda anterior si existe
+            if (searchTimer != null) {
+                searchTimer.cancel();
+            }
+
+            // Programar nueva búsqueda después de 300ms de inactividad
+            searchTimer = new Timer();
+            searchTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    Platform.runLater(() -> BuscarPaciente(null));
+                }
+            }, 300);
+        });
     }
 //   Permitir seleccionar con doble clic
     private void configurarDobleClick() {
@@ -124,7 +160,7 @@ public class BuscarPacientePreescripcionController {
 
         if (texto == null || texto.trim().isEmpty()) {
             if (todosPacientes != null) {
-                tableMedicos.setItems(todosPacientes);
+                pacientesObs.setAll(todosPacientes);
             }
             return;
         }
@@ -149,11 +185,14 @@ public class BuscarPacientePreescripcionController {
                     .collect(Collectors.toList());
         }
 
-        tableMedicos.setItems(FXCollections.observableArrayList(filtrados));
+        pacientesObs.setAll(filtrados);
     }
 
     @FXML
     private void Volver() {
+        if (searchTimer != null) {
+            searchTimer.cancel();
+        }
         Stage stage = (Stage) btnVolver.getScene().getWindow();
         stage.close();
     }
@@ -162,9 +201,13 @@ public class BuscarPacientePreescripcionController {
     public void Seleccionar(ActionEvent actionEvent) {
         pacienteSeleccionado = tableMedicos.getSelectionModel().getSelectedItem();
         if (pacienteSeleccionado == null) {
-            mostrarError("Debe seleccionar un paciente.");
+            Alerta.error("Error","Debe seleccionar un paciente.");
             return;
         }
+        if (searchTimer != null) {
+            searchTimer.cancel();
+        }
+
         Stage stage = (Stage) btnSeleccionar.getScene().getWindow();
         stage.close();
     }
@@ -184,5 +227,17 @@ public class BuscarPacientePreescripcionController {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnSeleccionar.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        btnFiltro.setDisable(deshabilitar);
+        tableMedicos.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 }

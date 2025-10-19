@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.RecetaLogica;
 import hospital.logica.Sesion;
 import hospital.model.*;
@@ -8,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Stage;
 
 public class EditarDetalleRecetaController {
@@ -21,12 +23,17 @@ public class EditarDetalleRecetaController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private Receta receta;
     private final RecetaLogica recetaIntermediaria = new RecetaLogica();
 
     public void initialize() {
-        // Cargar todos los estados en el ComboBox
         btnFiltro.setItems(FXCollections.observableArrayList(EstadoReceta.values()));
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
     }
 
     public void setReceta(Receta receta) {
@@ -43,19 +50,52 @@ public class EditarDetalleRecetaController {
             return;
         }
 
-        try {
-            Farmaceuta farmaceuta = (Farmaceuta) Sesion.getUsuario();
-            EstadoReceta nuevoEstado = btnFiltro.getValue();
-
-            recetaIntermediaria.actualizarEstado(farmaceuta, receta.getId(), nuevoEstado);
-            receta.setEstado(nuevoEstado);
-
-            Alerta.info("Éxito", "Estado actualizado a: " + nuevoEstado);
-            cerrarVentana();
-
-        } catch (Exception e) {
-            Alerta.error("Error", "No se pudo actualizar: " + e.getMessage());
+        Usuario usuarioActual = Sesion.getUsuario();
+        if (!(usuarioActual instanceof Farmaceuta)) {
+            Alerta.error("Error", "Solo los farmaceutas pueden cambiar el estado de una receta.");
+            return;
         }
+
+        cambiarEstadoAsync((Farmaceuta) usuarioActual, btnFiltro.getValue());
+    }
+
+    private void cambiarEstadoAsync(Farmaceuta farmaceuta, EstadoReceta nuevoEstado) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        // Capturar ID de receta antes del hilo
+        final String recetaId = receta.getId();
+
+        Async.Run(
+                // Tarea en segundo plano
+                () -> {
+                    try {
+                        recetaIntermediaria.actualizarEstado(farmaceuta, recetaId, nuevoEstado);
+                        return nuevoEstado;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                },
+
+                // OnSuccess
+                estado -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    // Actualizar objeto local
+                    receta.setEstado(estado);
+
+                    Alerta.info("Éxito", "Estado actualizado a: " + estado);
+                    cerrarVentana();
+                },
+
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "No se pudo actualizar: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
@@ -65,5 +105,17 @@ public class EditarDetalleRecetaController {
 
     private void cerrarVentana() {
         ((Stage) btnVolver.getScene().getWindow()).close();
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnFiltro.setDisable(deshabilitar);
+        btnCambiarEstado.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 }

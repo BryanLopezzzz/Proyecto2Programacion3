@@ -296,7 +296,7 @@ public class DashboardController {
     @FXML
     public void irAPacientes() {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("pacientesAdmin.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/pacientesAdmin.fxml"));
             Scene scene = new Scene(fxmlLoader.load());
             Stage stage = (Stage) btnPacientes.getScene().getWindow();
             stage.setScene(scene);
@@ -311,7 +311,7 @@ public class DashboardController {
     @FXML
     public void irAMedicamentos() {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("medicamentosAdmin.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/medicamentosAdmin.fxml"));
             Scene scene = new Scene(fxmlLoader.load());
             Stage stage = (Stage) btnMedicamentos.getScene().getWindow();
             stage.setScene(scene);

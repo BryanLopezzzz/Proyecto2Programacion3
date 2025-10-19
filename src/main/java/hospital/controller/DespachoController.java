@@ -1,7 +1,9 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.controller.busqueda.BuscarPacientePreescripcionController;
 import hospital.logica.RecetaLogica;
+import hospital.logica.Sesion;
 import javafx.collections.FXCollections;
 import hospital.model.*;
 import javafx.collections.ObservableList;
@@ -13,11 +15,9 @@ import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.event.ActionEvent;
-import hospital.model.Receta;
 
 import java.io.IOException;
 import java.util.List;
-
 
 public class DespachoController {
     @FXML
@@ -50,16 +50,20 @@ public class DespachoController {
     @FXML
     private Button btnBuscar;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private Paciente pacienteSeleccionado;
 
     private final RecetaLogica recetaIntermediaria = new RecetaLogica();
     private final ObservableList<Receta> recetasObservable = FXCollections.observableArrayList();
 
+    @FXML
     public void initialize() {
         // Configuración de columnas
-        colIdentificacionReceta.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getId()
-        ));
+        colIdentificacionReceta.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(data.getValue().getId())
+        );
 
         colNombreMedicamento.setCellValueFactory(data -> {
             if (!data.getValue().getDetalles().isEmpty()) {
@@ -79,61 +83,73 @@ public class DespachoController {
             return new javafx.beans.property.SimpleStringProperty("-");
         });
 
-        colFechaConfeccion.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getFecha() != null ? data.getValue().getFecha().toString() : "-"
-        ));
+        colFechaConfeccion.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(
+                        data.getValue().getFecha() != null ? data.getValue().getFecha().toString() : "-"
+                )
+        );
 
-        colEstado.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getEstado().name()
-        ));
+        colEstado.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(data.getValue().getEstado().name())
+        );
 
         tblRecetas.setItems(recetasObservable);
-        cargarRecetas();
+
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
+
+        cargarRecetasAsync();
     }
 
-    private void cargarRecetas() {
-        try {
-            List<Receta> recetas = recetaIntermediaria.listar();
-            recetasObservable.setAll(recetas);
-        } catch (Exception e) {
-            Alerta.error("Error", "Error cargando recetas: " + e.getMessage());
-        }
+    private void cargarRecetasAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        return recetaIntermediaria.listar();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al cargar recetas: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                recetas -> {
+                    recetasObservable.setAll(recetas);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error cargando recetas: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
     private void BuscarPaciente(ActionEvent event) {
         try {
-            // Cargar la ventana de búsqueda de pacientes (la misma que usa PreescribirRecetaView)
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/buscarPacientePrescripcion.fxml"));
             Parent root = loader.load();
 
-            // Obtener el controlador de la ventana de búsqueda
             BuscarPacientePreescripcionController buscarView = loader.getController();
 
-            // Crear y configurar la ventana modal
             Stage stage = new Stage();
             stage.setTitle("Buscar Paciente");
             stage.setScene(new Scene(root));
             stage.initModality(Modality.WINDOW_MODAL);
-            // SOLUCIÓN: Usar btnBuscar en lugar de btnBuscarPaciente (según el FXML)
             stage.initOwner(btnBuscar.getScene().getWindow());
 
-            // Mostrar la ventana y esperar a que se cierre
             stage.showAndWait();
 
-            // Obtener el paciente seleccionado de la tabla
             Paciente pacienteNuevo = buscarView.getPacienteSeleccionado();
             if (pacienteNuevo != null) {
-                // Guardar el paciente seleccionado
                 pacienteSeleccionado = pacienteNuevo;
-
-                // Actualizar el campo de texto de búsqueda para mostrar el paciente seleccionado
                 txtBuscar.setText(pacienteSeleccionado.getNombre() + " (" + pacienteSeleccionado.getId() + ")");
-
-                // Filtrar las recetas para mostrar solo las del paciente seleccionado
-                filtrarRecetasPorPaciente();
-
-                // Opcional: Mostrar mensaje informativo
+                filtrarRecetasPorPacienteAsync();
                 Alerta.info("Paciente seleccionado",
                         "Mostrando recetas para: " + pacienteSeleccionado.getNombre());
             }
@@ -143,17 +159,37 @@ public class DespachoController {
         }
     }
 
-    private void filtrarRecetasPorPaciente() {
-        if (pacienteSeleccionado != null) {
-            try {
-                // Obtener todas las recetas del paciente específico
-                List<Receta> recetasPaciente = recetaIntermediaria.listarRecetasPorPaciente(pacienteSeleccionado.getId());
-                recetasObservable.setAll(recetasPaciente);
-            } catch (Exception e) {
-                Alerta.error("Error", "Error filtrando recetas del paciente: " + e.getMessage());
-            }
-        }
+    private void filtrarRecetasPorPacienteAsync() {
+        if (pacienteSeleccionado == null) return;
+
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        final String pacienteId = pacienteSeleccionado.getId();
+
+        Async.Run(
+                () -> {
+                    try {
+                        return recetaIntermediaria.listarRecetasPorPaciente(pacienteId);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al filtrar recetas: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                recetas -> {
+                    recetasObservable.setAll(recetas);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", "Error filtrando recetas del paciente: " + error.getMessage());
+                }
+        );
     }
+
     @FXML
     public void VerDetalle(ActionEvent event) {
         Receta seleccionada = tblRecetas.getSelectionModel().getSelectedItem();
@@ -196,22 +232,17 @@ public class DespachoController {
             stage.setTitle("Cambiar Estado");
             stage.showAndWait();
 
-            tblRecetas.refresh(); // Refrescar tabla
+            // Recargar recetas después de cambiar estado
+            if (pacienteSeleccionado != null) {
+                filtrarRecetasPorPacienteAsync();
+            } else {
+                cargarRecetasAsync();
+            }
 
         } catch (Exception e) {
             Alerta.error("Error", "No se pudo abrir la ventana.");
         }
     }
-
-    private EstadoReceta siguienteEstado(EstadoReceta actual) {
-        return switch (actual) {
-            case CONFECCIONADA -> EstadoReceta.EN_PROCESO;
-            case EN_PROCESO -> EstadoReceta.LISTA;
-            case LISTA -> EstadoReceta.ENTREGADA;
-            default -> actual;
-        };
-    }
-
 
     @FXML
     private void Volver(ActionEvent event) {
@@ -226,5 +257,18 @@ public class DespachoController {
             Alerta.error("Error", "Error al cargar el dashboard.");
         }
     }
-}
 
+    private void deshabilitarControles(boolean deshabilitar) {
+        btnBuscar.setDisable(deshabilitar);
+        btnVerDetalle.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+        txtBuscar.setDisable(deshabilitar);
+        tblRecetas.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+}

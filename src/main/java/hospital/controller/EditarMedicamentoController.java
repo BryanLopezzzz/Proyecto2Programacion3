@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
@@ -8,9 +9,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -33,12 +32,15 @@ public class EditarMedicamentoController implements Initializable {
     @FXML
     private Button btnVolver;
 
-    private final MedicamentoLogica medicamentoIntermediaria;
+    @FXML
+    private ProgressIndicator progressIndicator;
+
+    private final MedicamentoLogica medicamentoLogica;
     private final Administrador administrador;
     private Medicamento medicamentoOriginal;
 
     public EditarMedicamentoController() {
-        this.medicamentoIntermediaria = new MedicamentoLogica();
+        this.medicamentoLogica = new MedicamentoLogica();
         this.administrador = new Administrador();
     }
 
@@ -47,8 +49,14 @@ public class EditarMedicamentoController implements Initializable {
         // El código del medicamento no debería ser editable
         txtCodigo.setEditable(false);
         txtCodigo.setStyle("-fx-background-color: #f5f5f5; -fx-border-color: #b3b3b3; -fx-border-radius: 4;");
-    }
 
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
+
+        // Enfocar el campo nombre por defecto
+        txtNombre.requestFocus();
+    }
 
     public void setMedicamento(Medicamento medicamento) {
         if (medicamento != null) {
@@ -61,50 +69,67 @@ public class EditarMedicamentoController implements Initializable {
 
     @FXML
     private void Guardar() {
-        String nombre = txtNombre.getText();
-        String presentacion = txtPresentacion.getText();
-
-        // Validaciones
-        if (nombre == null || nombre.trim().isEmpty()) {
-            mostrarError("El nombre es obligatorio.");
+        if (!validarCampos()) {
             return;
         }
 
-        if (presentacion == null || presentacion.trim().isEmpty()) {
-            mostrarError("La presentación es obligatoria.");
+        // Verificar si hubo cambios
+        if (!hayCambios()) {
+            mostrarInformacion("No se detectaron cambios para guardar.");
             return;
         }
 
-        if (medicamentoOriginal == null) {
-            mostrarError("Error: No se ha establecido el medicamento a editar.");
-            return;
-        }
+        // Mostrar confirmación antes de guardar
+        mostrarConfirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicamentoAsync);
+    }
 
-        try {
-            // Crear medicamento con los nuevos datos
-            Medicamento medicamentoEditado = new Medicamento(
-                    medicamentoOriginal.getCodigo(), // El código no cambia
-                    nombre.trim(),
-                    presentacion.trim()
-            );
+    private void guardarMedicamentoAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            // Actualizar el medicamento usando el controlador
-            medicamentoIntermediaria.modificar(administrador, medicamentoEditado);
+        Async.runVoid(
+                () -> {
+                    try {
+                        // Crear medicamento con los nuevos datos
+                        Medicamento medicamentoEditado = new Medicamento(
+                                medicamentoOriginal.getCodigo(),
+                                txtNombre.getText().trim(),
+                                txtPresentacion.getText().trim()
+                        );
 
-            // Mostrar confirmación
-            mostrarInformacion("Medicamento actualizado correctamente.");
-
-            // Cerrar ventana tras editar exitosamente
-            Stage stage = (Stage) btnGuardarMedicamento.getScene().getWindow();
-            Volver();
-
-        } catch (Exception e) {
-            mostrarError("Error al actualizar medicamento: " + e.getMessage());
-        }
+                        medicamentoLogica.modificar(administrador, medicamentoEditado);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al actualizar: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                () -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInformacion("Medicamento actualizado correctamente.");
+                    Volver();
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al actualizar medicamento: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
     private void Volver() {
+        // Verificar si hay cambios sin guardar
+        if (hayCambios()) {
+            mostrarConfirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
+                    this::volverABusqueda);
+        } else {
+            volverABusqueda();
+        }
+    }
+
+    private void volverABusqueda() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/MedicamentosAdmin.fxml"));
             Parent root = fxmlLoader.load();
@@ -114,7 +139,71 @@ public class EditarMedicamentoController implements Initializable {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda.");
+            mostrarError("Error al volver a la vista de búsqueda: " + e.getMessage());
+        }
+    }
+
+    private boolean validarCampos() {
+        StringBuilder errores = new StringBuilder();
+
+        // Validar código (aunque no sea editable)
+        String codigo = txtCodigo.getText().trim();
+        if (codigo.isEmpty()) {
+            errores.append("- El código no puede estar vacío.\n");
+        }
+
+        // Validar nombre
+        String nombre = txtNombre.getText().trim();
+        if (nombre.isEmpty()) {
+            errores.append("- El nombre es obligatorio.\n");
+        } else if (nombre.length() < 2) {
+            errores.append("- El nombre debe tener al menos 2 caracteres.\n");
+        }
+
+        // Validar presentación
+        String presentacion = txtPresentacion.getText().trim();
+        if (presentacion.isEmpty()) {
+            errores.append("- La presentación es obligatoria.\n");
+        } else if (presentacion.length() < 2) {
+            errores.append("- La presentación debe tener al menos 2 caracteres.\n");
+        }
+
+        // Validar que exista medicamento original
+        if (medicamentoOriginal == null) {
+            errores.append("- Error: No se ha establecido el medicamento a editar.\n");
+        }
+
+        // Mostrar errores si existen
+        if (errores.length() > 0) {
+            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean hayCambios() {
+        if (medicamentoOriginal == null) {
+            return false;
+        }
+
+        String nombreActual = txtNombre.getText().trim();
+        String presentacionActual = txtPresentacion.getText().trim();
+
+        return !nombreActual.equals(medicamentoOriginal.getNombre()) ||
+                !presentacionActual.equals(medicamentoOriginal.getPresentacion());
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtNombre.setDisable(deshabilitar);
+        txtPresentacion.setDisable(deshabilitar);
+        btnGuardarMedicamento.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
         }
     }
 
@@ -133,4 +222,16 @@ public class EditarMedicamentoController implements Initializable {
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
+
+    private void mostrarConfirmacion(String mensaje, Runnable accion) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmación");
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            accion.run();
+        }
+    }
+
 }

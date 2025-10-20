@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.MedicoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medico;
@@ -10,6 +11,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -30,6 +33,9 @@ public class EditarMedicoController {
     @FXML
     private Button btnVolver;
 
+    @FXML
+    private ProgressIndicator progressIndicator;
+
     private final MedicoLogica medicoIntermediaria = new MedicoLogica();
     private final Administrador admin = new Administrador();
     private Medico medicoActual;
@@ -39,6 +45,11 @@ public class EditarMedicoController {
         // El ID no debe ser editable en la modificación
         txtIdentificacion.setEditable(false);
         txtIdentificacion.setStyle("-fx-background-color: #f0f0f0;");
+
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
+        txtNombre.requestFocus();
     }
 
     public void inicializarConMedico(Medico medico) {
@@ -57,37 +68,68 @@ public class EditarMedicoController {
 
     @FXML
     public void Guardar(ActionEvent event) {
-        try {
-            // Validar campos
-            if (!validarCampos()) {
-                return;
-            }
-
-            // Crear médico con los datos actualizados
-            Medico medicoModificado = new Medico();
-            medicoModificado.setId(txtIdentificacion.getText().trim());
-            medicoModificado.setNombre(txtNombre.getText().trim());
-            medicoModificado.setEspecialidad(txtEspecialidad.getText().trim());
-
-            // Si el médico original tenía clave, la mantenemos
-            if (medicoActual.getClave() != null) {
-                medicoModificado.setClave(medicoActual.getClave());
-            }
-
-            medicoIntermediaria.modificar(admin, medicoModificado);
-
-            mostrarInfo("Médico modificado exitosamente.");
-
-            volverABusqueda();
-
-        } catch (Exception e) {
-            mostrarError("Error al guardar médico: " + e.getMessage());
+        if (!validarCampos()) {
+            return;
         }
+
+        // Verificar si hubo cambios
+        if (!hayCambios()) {
+            mostrarInfo("No se detectaron cambios para guardar.");
+            return;
+        }
+
+        // Mostrar confirmación antes de guardar
+        mostrarConfirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicoAsync);
+    }
+
+    private void guardarMedicoAsync() {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        // Crear médico con los datos actualizados
+                        Medico medicoModificado = new Medico();
+                        medicoModificado.setId(txtIdentificacion.getText().trim());
+                        medicoModificado.setNombre(txtNombre.getText().trim());
+                        medicoModificado.setEspecialidad(txtEspecialidad.getText().trim());
+
+                        // Si el médico original tenía clave, la mantenemos
+                        if (medicoActual.getClave() != null) {
+                            medicoModificado.setClave(medicoActual.getClave());
+                        }
+
+                        medicoIntermediaria.modificar(admin, medicoModificado);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al actualizar: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                () -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Médico modificado exitosamente.");
+                    volverABusqueda();
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al guardar médico: " + error.getMessage());
+                }
+        );
     }
 
     @FXML
     public void Volver(ActionEvent event) {
-        volverABusqueda();
+        // Verificar si hay cambios sin guardar
+        if (hayCambios()) {
+            mostrarConfirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
+                    this::volverABusqueda);
+        } else {
+            volverABusqueda();
+        }
     }
 
     private boolean validarCampos() {
@@ -99,10 +141,14 @@ public class EditarMedicoController {
 
         if (txtNombre.getText() == null || txtNombre.getText().trim().isEmpty()) {
             errores.append("- El nombre es obligatorio.\n");
+        } else if (txtNombre.getText().trim().length() < 2) {
+            errores.append("- El nombre debe tener al menos 2 caracteres.\n");
         }
 
         if (txtEspecialidad.getText() == null || txtEspecialidad.getText().trim().isEmpty()) {
             errores.append("- La especialidad es obligatoria.\n");
+        } else if (txtEspecialidad.getText().trim().length() < 2) {
+            errores.append("- La especialidad debe tener al menos 2 caracteres.\n");
         }
 
         if (errores.length() > 0) {
@@ -111,6 +157,18 @@ public class EditarMedicoController {
         }
 
         return true;
+    }
+
+    private boolean hayCambios() {
+        if (medicoActual == null) {
+            return false;
+        }
+
+        String nombreActual = txtNombre.getText().trim();
+        String especialidadActual = txtEspecialidad.getText().trim();
+
+        return !nombreActual.equals(medicoActual.getNombre()) ||
+                !especialidadActual.equals(medicoActual.getEspecialidad());
     }
 
     private void volverABusqueda() {
@@ -129,6 +187,19 @@ public class EditarMedicoController {
         }
     }
 
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtNombre.setDisable(deshabilitar);
+        txtEspecialidad.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
+    }
+
     private void mostrarError(String mensaje) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -144,4 +215,16 @@ public class EditarMedicoController {
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
+
+    private void mostrarConfirmacion(String mensaje, Runnable accion) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmación");
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            accion.run();
+        }
+    }
+
 }

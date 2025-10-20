@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
 import hospital.model.Farmaceuta;
@@ -12,6 +13,9 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 public class EditarFarmaceutaController {
+
+    @FXML
+    private ProgressIndicator progressIndicator;
 
     @FXML
     private TextField txtIdentificacionFarmaceuta;
@@ -82,30 +86,59 @@ public class EditarFarmaceutaController {
 
         // Mostrar confirmación antes de guardar
         mostrarConfirmacion("¿Está seguro que desea guardar los cambios?", () -> {
-            try {
-                // Crear farmaceuta actualizado
-                Farmaceuta farmaceutaActualizado = new Farmaceuta();
-                farmaceutaActualizado.setId(txtIdentificacionFarmaceuta.getText().trim());
-                farmaceutaActualizado.setNombre(nuevoNombre);
-
-                // Si el farmaceuta original tiene clave, mantenerla
-                if (farmaceutaOriginal != null && farmaceutaOriginal.getClave() != null) {
-                    farmaceutaActualizado.setClave(farmaceutaOriginal.getClave());
-                }
-
-                // Actualizar usando el controller
-                farmaceutaIntermediaria.modificar(admin, farmaceutaActualizado);
-
-                // Mostrar mensaje de éxito
-                mostrarInfo("Farmaceuta actualizado exitosamente.");
-
-                // Volver a la vista de búsqueda
-                volverABusqueda();
-
-            } catch (Exception e) {
-                mostrarError("Error al actualizar farmaceuta: " + e.getMessage());
-            }
+            guardarFarmaceutaAsync(nuevoNombre);
         });
+    }
+
+    private void guardarFarmaceutaAsync(String nuevoNombre) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.runVoid(
+                () -> {
+                    try {
+                        // Crear farmaceuta actualizado
+                        Farmaceuta farmaceutaActualizado = new Farmaceuta();
+                        farmaceutaActualizado.setId(txtIdentificacionFarmaceuta.getText().trim());
+                        farmaceutaActualizado.setNombre(nuevoNombre);
+
+                        // Si el farmaceuta original tiene clave, mantenerla
+                        if (farmaceutaOriginal != null && farmaceutaOriginal.getClave() != null) {
+                            farmaceutaActualizado.setClave(farmaceutaOriginal.getClave());
+                        }
+
+                        // Actualizar usando el controller
+                        farmaceutaIntermediaria.modificar(admin, farmaceutaActualizado);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al actualizar: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                () -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarInfo("Farmaceuta actualizado exitosamente.");
+                    volverABusqueda();
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error al actualizar farmaceuta: " + error.getMessage());
+                }
+        );
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtNombreFarmaceuta.setDisable(deshabilitar);
+        btnGuardar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
+    }
+
+    private void mostrarCargando(boolean mostrar) {
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(mostrar);
+        }
     }
 
     @FXML
@@ -196,10 +229,5 @@ public class EditarFarmaceutaController {
         if (alert.showAndWait().get() == ButtonType.OK) {
             accion.run();
         }
-    }
-
-    // Metodo getter para testing o uso externo
-    public Farmaceuta getFarmaceutaOriginal() {
-        return farmaceutaOriginal;
     }
 }

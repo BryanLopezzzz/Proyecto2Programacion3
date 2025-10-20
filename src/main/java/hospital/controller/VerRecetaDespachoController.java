@@ -69,7 +69,6 @@ public class VerRecetaDespachoController {
                     receta.getPaciente().getId() : "-");
             lblPacienteNombre.setText(receta.getPaciente().getNombre() != null ?
                     receta.getPaciente().getNombre() : "-");
-            // ← AQUÍ ESTÁ EL ERROR (línea 65)
             lblPacienteNacimiento.setText(receta.getPaciente().getFechaNacimiento() != null ?
                     receta.getPaciente().getFechaNacimiento().toString() : "-");
             lblPacienteTelefono.setText(receta.getPaciente().getTelefono() != null ?

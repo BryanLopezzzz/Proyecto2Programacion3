@@ -101,7 +101,6 @@ public class RecetaDatos implements Plantilla {
                 Receta receta = new Receta();
                 receta.setId(rs.getString("id"));
 
-                // Cargar datos completos del paciente
                 Paciente paciente = new Paciente();
                 paciente.setId(rs.getString("paciente_id"));
                 paciente.setNombre(rs.getString("paciente_nombre"));
@@ -109,7 +108,6 @@ public class RecetaDatos implements Plantilla {
                 paciente.setTelefono(rs.getString("paciente_telefono"));
                 receta.setPaciente(paciente);
 
-                // Cargar datos completos del médico
                 Medico medico = new Medico();
                 medico.setId(rs.getString("medico_id"));
                 medico.setNombre(rs.getString("medico_nombre"));

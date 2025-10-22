@@ -1,5 +1,6 @@
 package hospital.controller;
 
+import hospital.controller.busqueda.Async;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.DetalleReceta;
@@ -68,40 +69,69 @@ public class DetalleRecetaController {
             String indicaciones = txtIndicaciones.getText().trim();
 
             if (modoEdicion && detalleEditable != null) {
-                // actualizar el detalle existente (objeto compartido)
                 detalleEditable.setCantidad(cantidad);
                 detalleEditable.setDiasTratamiento(dias);
                 detalleEditable.setIndicaciones(indicaciones);
                 this.detalleCreado = detalleEditable;
+
+                Alerta.info("Informacion", "Actualizado correctamente.");
+                cerrarVentana();
             } else {
-                DetalleReceta nuevo = new DetalleReceta();
-                nuevo.setCantidad(cantidad);
-                nuevo.setDiasTratamiento(dias);
-                nuevo.setIndicaciones(indicaciones);
-
-                // IMPORTANTE: Obtener el medicamento completo desde la base de datos
-                Medicamento medicamentoCompleto = medicamentoIntermediaria.buscarPorCodigo(
-                        new Administrador(), // Usar administrador para acceso
-                        medicamentoId
-                );
-
-                if (medicamentoCompleto == null) {
-                    mostrarError("Error", "No se pudo encontrar el medicamento con código: " + medicamentoId);
-                    return;
-                }
-
-                nuevo.setMedicamento(medicamentoCompleto);
-                this.detalleCreado = nuevo;
+                agregarDetalleAsync(cantidad, dias, indicaciones);
             }
-
-            Alerta.info("Informacion", "Agregado correctamente.");
-            cerrarVentana();
 
         } catch (NumberFormatException e) {
             mostrarError("Entrada inválida", "Cantidad y duración deben ser números enteros.");
-        } catch (Exception e) {
-            mostrarError("Error", "Error al procesar el medicamento: " + e.getMessage());
         }
+    }
+
+    private void agregarDetalleAsync(int cantidad, int dias, String indicaciones) {
+        deshabilitarControles(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        Medicamento medicamentoCompleto = medicamentoIntermediaria.buscarPorCodigo(
+                                new Administrador(),
+                                medicamentoId
+                        );
+
+                        if (medicamentoCompleto == null) {
+                            throw new Exception("No se pudo encontrar el medicamento con código: " + medicamentoId);
+                        }
+
+                        DetalleReceta nuevo = new DetalleReceta();
+                        nuevo.setCantidad(cantidad);
+                        nuevo.setDiasTratamiento(dias);
+                        nuevo.setIndicaciones(indicaciones);
+                        nuevo.setMedicamento(medicamentoCompleto);
+
+                        return nuevo;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al procesar el medicamento: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                nuevoDetalle -> {
+                    this.detalleCreado = nuevoDetalle;
+                    deshabilitarControles(false);
+                    Alerta.info("Informacion", "Agregado correctamente.");
+                    cerrarVentana();
+                },
+                // OnError
+                error -> {
+                    deshabilitarControles(false);
+                    mostrarError("Error", error.getMessage());
+                }
+        );
+    }
+
+    private void deshabilitarControles(boolean deshabilitar) {
+        txtCantidad.setDisable(deshabilitar);
+        txtDuracion.setDisable(deshabilitar);
+        txtIndicaciones.setDisable(deshabilitar);
+        btnAgregar.setDisable(deshabilitar);
+        btnVolver.setDisable(deshabilitar);
     }
 
     @FXML

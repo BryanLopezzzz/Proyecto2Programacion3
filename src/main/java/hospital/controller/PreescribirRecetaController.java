@@ -16,6 +16,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import hospital.controller.Alerta;
 
 import java.io.IOException;
 import java.time.LocalDate;

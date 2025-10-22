@@ -249,26 +249,54 @@ public class BuscarPacienteController {
 
     @FXML
     public void BuscarPaciente(ActionEvent event) {
-        String texto = txtBuscar.getText().toLowerCase();
+        String texto = txtBuscar.getText().trim();
         String filtro = btnFiltro.getValue();
 
         if (texto.isEmpty()) {
-            tblPacientes.setItems(pacientesObs); // muestra todo si no hay filtro
+            cargarPacientesAsync();
             return;
         }
 
-        List<Paciente> filtrados;
-        if ("Nombre".equals(filtro)) {
-            filtrados = pacientesObs.stream()
-                    .filter(p -> p.getNombre().toLowerCase().contains(texto))
-                    .collect(Collectors.toList());
-        } else { // ID
-            filtrados = pacientesObs.stream()
-                    .filter(p -> p.getId().toLowerCase().contains(texto))
-                    .collect(Collectors.toList());
-        }
+        buscarPacientesAsync(texto, filtro);
+    }
 
-        tblPacientes.setItems(FXCollections.observableArrayList(filtrados));
+    private void buscarPacientesAsync(String criterio, String filtro) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        List<Paciente> resultados;
+                        if ("Nombre".equals(filtro)) {
+                            resultados = pacienteIntermediaria.buscarPorNombre(admin, criterio);
+                        } else { // ID
+                            Paciente p = pacienteIntermediaria.buscarPorId(criterio);
+                            resultados = (p != null) ? List.of(p) : List.of();
+                        }
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error en búsqueda: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                resultados -> {
+                    pacientesObs = FXCollections.observableArrayList(resultados);
+                    tblPacientes.setItems(pacientesObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+
+                    if (resultados.isEmpty()) {
+                        mostrarInfo("No se encontraron pacientes con el criterio especificado.");
+                    }
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error en búsqueda: " + error.getMessage());
+                }
+        );
     }
 
     @FXML

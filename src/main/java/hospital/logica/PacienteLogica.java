@@ -39,6 +39,19 @@ public class PacienteLogica {
                 .orElse(null);
     }
 
+    public List<Paciente> buscarPorNombre(String nombre) throws SQLException {
+        if (nombre == null) nombre = "";
+        String q = nombre.toLowerCase();
+        return listar().stream()
+                .filter(p -> p.getNombre() != null && p.getNombre().toLowerCase().contains(q))
+                .toList();
+    }
+
+    public List<Paciente> buscarPorNombre(Administrador admin, String nombre) throws Exception {
+        validarAdmin(admin);
+        return buscarPorNombre(nombre);
+    }
+
     // --------- Escritura ---------
 
     public void agregar(Paciente paciente) throws Exception {

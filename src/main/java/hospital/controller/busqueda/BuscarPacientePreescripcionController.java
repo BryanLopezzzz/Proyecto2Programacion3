@@ -159,33 +159,51 @@ public class BuscarPacientePreescripcionController {
         String texto = txtBuscar.getText();
 
         if (texto == null || texto.trim().isEmpty()) {
-            if (todosPacientes != null) {
-                pacientesObs.setAll(todosPacientes);
-            }
-            return;
-        }
-
-        if (todosPacientes == null || todosPacientes.isEmpty()) {
+            pacientesObs.setAll(todosPacientes);
             return;
         }
 
         String criterio = texto.toLowerCase().trim();
         String filtro = btnFiltro.getValue();
 
-        List<Paciente> filtrados;
-        if ("Nombre".equals(filtro)) {
-            filtrados = todosPacientes.stream()
-                    .filter(p -> p.getNombre() != null &&
-                            p.getNombre().toLowerCase().contains(criterio))
-                    .collect(Collectors.toList());
-        } else { // ID
-            filtrados = todosPacientes.stream()
-                    .filter(p -> p.getId() != null &&
-                            p.getId().toLowerCase().contains(criterio))
-                    .collect(Collectors.toList());
-        }
+        buscarPacientesAsync(criterio, filtro);
+    }
 
-        pacientesObs.setAll(filtrados);
+    private void buscarPacientesAsync(String criterio, String filtro) {
+        txtBuscar.setDisable(true);
+        btnFiltro.setDisable(true);
+        mostrarCargando(true);
+
+        Async.Run(
+                () -> {
+                    try {
+                        List<Paciente> resultados;
+                        if ("Nombre".equals(filtro)) {
+                            resultados = pacienteIntermediaria.buscarPorNombre(admin, criterio);
+                        } else { // ID
+                            Paciente p = pacienteIntermediaria.buscarPorId(criterio);
+                            resultados = (p != null) ? List.of(p) : List.of();
+                        }
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error en búsqueda: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                resultados -> {
+                    pacientesObs.setAll(resultados);
+                    txtBuscar.setDisable(false);
+                    btnFiltro.setDisable(false);
+                    mostrarCargando(false);
+                },
+                // OnError
+                error -> {
+                    txtBuscar.setDisable(false);
+                    btnFiltro.setDisable(false);
+                    mostrarCargando(false);
+                    mostrarError("Error al buscar pacientes: " + error.getMessage());
+                }
+        );
     }
 
     @FXML

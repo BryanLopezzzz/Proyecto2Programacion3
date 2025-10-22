@@ -239,29 +239,50 @@ public class BuscarMedicoController {
         String filtro = cmbFiltrar.getValue();
 
         if (criterio.isEmpty()) {
-            tblMedicos.setItems(medicosObs);
+            cargarMedicosAsync();
             return;
         }
 
-        try {
-            List<Medico> resultados;
-            if ("Nombre".equalsIgnoreCase(filtro)) {
-                resultados = medicoIntermediaria.buscarPorNombre(admin, criterio);
-            } else { // ID
-                Medico m = medicoIntermediaria.buscarPorId(admin, criterio);
-                resultados = (m != null) ? List.of(m) : List.of();
-            }
+        buscarMedicosAsync(criterio, filtro);
+    }
 
-            medicosObs = FXCollections.observableArrayList(resultados);
-            tblMedicos.setItems(medicosObs);
+    private void buscarMedicosAsync(String criterio, String filtro) {
+        deshabilitarControles(true);
+        mostrarCargando(true);
 
-            if (resultados.isEmpty()) {
-                mostrarInfo("No se encontraron médicos con el criterio especificado.");
-            }
+        Async.Run(
+                () -> {
+                    try {
+                        List<Medico> resultados;
+                        if ("Nombre".equalsIgnoreCase(filtro)) {
+                            resultados = medicoIntermediaria.buscarPorNombre(admin, criterio);
+                        } else { // ID
+                            Medico m = medicoIntermediaria.buscarPorId(admin, criterio);
+                            resultados = (m != null) ? List.of(m) : List.of();
+                        }
+                        return resultados;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error en búsqueda: " + e.getMessage(), e);
+                    }
+                },
+                // OnSuccess
+                resultados -> {
+                    medicosObs = FXCollections.observableArrayList(resultados);
+                    tblMedicos.setItems(medicosObs);
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
 
-        } catch (Exception e) {
-            mostrarError("Error en búsqueda: " + e.getMessage());
-        }
+                    if (resultados.isEmpty()) {
+                        mostrarInfo("No se encontraron médicos con el criterio especificado.");
+                    }
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    mostrarError("Error en búsqueda: " + error.getMessage());
+                }
+        );
     }
 
     @FXML

@@ -60,7 +60,7 @@
          </columns>
       </TableView>
 
-      //Lo nuevo, no sé si sirve porque no lo agregue al controller
+      <!--Lo nuevo, no sé si sirve porque no lo agregue al controller-->
       <ProgressIndicator fx:id="progressIndicator"
                          layoutX="275.0" layoutY="320.0"
                          prefHeight="50.0" prefWidth="50.0"

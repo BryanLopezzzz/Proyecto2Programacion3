@@ -60,7 +60,7 @@
             <TableColumn id="colFechaNacimiento" fx:id="colFechaNacimiento" prefWidth="188.00003051757812" text="Fecha de nacimiento" />
          </columns>
       </TableView>
-      //Lo nuevo, no sé si funcione porque no se agrego en el controller
+      <!--Lo nuevo, no sé si funcione porque no se agrego en el controller-->
       <ProgressIndicator fx:id="progressIndicator"
                          layoutX="275.0" layoutY="320.0"
                          prefHeight="50.0" prefWidth="50.0"

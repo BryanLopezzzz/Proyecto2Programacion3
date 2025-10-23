@@ -121,9 +121,7 @@ public class RecetaDatos implements Plantilla {
                 try {
                     List<DetalleReceta> detalles = listarDetallesPorReceta(receta.getId());
                     receta.setDetalles(detalles);
-                    System.out.println("✓ Receta " + receta.getId() + " cargada con " + detalles.size() + " detalles");
                 } catch (Exception e) {
-                    System.err.println("✗ Error cargando detalles de receta " + receta.getId());
                     receta.setDetalles(new ArrayList<>());
                 }
 
@@ -131,7 +129,6 @@ public class RecetaDatos implements Plantilla {
             }
         }
 
-        System.out.println("Total de recetas cargadas: " + lista.size());
         return lista;
     }
 

@@ -43,12 +43,10 @@ public class ChatController { //Nueva clase para el Frontend
     private HospitalClient client;
     private ObservableList<UsuarioActivo> usuariosActivos;
 
-    @Override
     public void initialize(URL location, ResourceBundle resources) {
         usuariosActivos = FXCollections.observableArrayList();
         lstUsuariosActivos.setItems(usuariosActivos);
 
-        // Configurar la celda personalizada para mostrar usuarios
         lstUsuariosActivos.setCellFactory(param -> new ListCell<UsuarioActivo>() {
             @Override
             protected void updateItem(UsuarioActivo item, boolean empty) {
@@ -72,7 +70,6 @@ public class ChatController { //Nueva clase para el Frontend
             lblUsuarioActual.setText("Usuario: " + Sesion.getUsuario().getNombre());
         }
 
-        // Inicializar el cliente
         inicializarCliente();
     }
 

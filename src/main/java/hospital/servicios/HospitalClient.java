@@ -332,29 +332,29 @@ public class HospitalClient {
         enviarComando("LOGOUT", callback);
     }
 
-    public void listarMedicos(Consumer<String> callback) {
-        enviarComando("LISTAR_MEDICOS", callback);
-    }
-
-    public void listarPacientes(Consumer<String> callback) {
-        enviarComando("LISTAR_PACIENTES", callback);
-    }
-
-    public void listarRecetas(Consumer<String> callback) {
-        enviarComando("LISTAR_RECETAS", callback);
-    }
-
-    public void actualizarEstadoReceta(String recetaId, String nuevoEstado, Consumer<String> callback) {
-        String comando = "ACTUALIZAR_ESTADO_RECETA|" + recetaId + "|" + nuevoEstado;
-        enviarComando(comando, callback);
-    }
-
-    public void enviarMensajePrivado(String destinatarioId, String mensaje, Consumer<String> callback) {
-        String comando = "ENVIAR_MENSAJE|" + destinatarioId + "|" + mensaje;
-        enviarComando(comando, callback);
-    }
-
-    public void listarUsuariosActivos(Consumer<String> callback) {
-        enviarComando("LISTAR_USUARIOS_ACTIVOS", callback);
-    }
+//    public void listarMedicos(Consumer<String> callback) {
+//        enviarComando("LISTAR_MEDICOS", callback);
+//    }
+//
+//    public void listarPacientes(Consumer<String> callback) {
+//        enviarComando("LISTAR_PACIENTES", callback);
+//    }
+//
+//    public void listarRecetas(Consumer<String> callback) {
+//        enviarComando("LISTAR_RECETAS", callback);
+//    }
+//
+//    public void actualizarEstadoReceta(String recetaId, String nuevoEstado, Consumer<String> callback) {
+//        String comando = "ACTUALIZAR_ESTADO_RECETA|" + recetaId + "|" + nuevoEstado;
+//        enviarComando(comando, callback);
+//    }
+//
+//    public void enviarMensajePrivado(String destinatarioId, String mensaje, Consumer<String> callback) {
+//        String comando = "ENVIAR_MENSAJE|" + destinatarioId + "|" + mensaje;
+//        enviarComando(comando, callback);
+//    }
+//
+//    public void listarUsuariosActivos(Consumer<String> callback) {
+//        enviarComando("LISTAR_USUARIOS_ACTIVOS", callback);
+//    }
 }

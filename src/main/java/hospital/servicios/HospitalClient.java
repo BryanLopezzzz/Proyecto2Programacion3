@@ -4,8 +4,10 @@ import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -15,14 +17,23 @@ public class HospitalClient {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private boolean conectado = false;
+    private final AtomicBoolean conectado = new AtomicBoolean(false);
+    private final AtomicBoolean reconectando = new AtomicBoolean(false);
 
     private final Map<Integer, Consumer<String>> callbacks = new ConcurrentHashMap<>();
     private final AtomicInteger requestId = new AtomicInteger(0);
 
     private Consumer<String> onMensajeRecibido;
+    private Consumer<Boolean> onEstadoConexion;
 
     private Thread listenerThread;
+    private Thread watchdogThread; // thread para detectar desconexiones
+
+    private String lastHost;
+    private int lastPort;
+    private int intentosReconexion = 0;
+    private final int MAX_INTENTOS_RECONEXION = 3;
+    private final long DELAY_RECONEXION_MS = 3000;
 
     private HospitalClient() {
         // Constructor privado para Singleton
@@ -36,35 +47,52 @@ public class HospitalClient {
     }
 
     public void conectar(String host, int port) throws IOException {
-        if (conectado) {
+        if (conectado.get()) {
+            System.out.println("Ya hay una conexión activa");
             return;
         }
 
-        socket = new Socket(host, port);
-        out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-        conectado = true;
+        this.lastHost = host;
+        this.lastPort = port;
 
-        iniciarListener();
+        try {
+            socket = new Socket(host, port);
+            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            conectado.set(true);
+            intentosReconexion = 0;
 
-        System.out.println("Conectado al servidor: " + host + ":" + port);
+            iniciarListener();
+            iniciarWatchdog();
+
+            System.out.println("✓ Conectado al servidor: " + host + ":" + port);
+            notificarEstadoConexion(true);
+
+        } catch (IOException e) {
+            conectado.set(false);
+            notificarEstadoConexion(false);
+            throw new IOException("No se pudo conectar al servidor: " + e.getMessage(), e);
+        }
     }
 
     private void iniciarListener() {
         listenerThread = new Thread(() -> {
             try {
                 String linea;
-                while (conectado && (linea = in.readLine()) != null) {
+                while (conectado.get() && (linea = in.readLine()) != null) {
                     final String mensaje = linea;
                     System.out.println("← Recibido: " + mensaje);
-
-                    // Procesar el mensaje
                     procesarMensaje(mensaje);
                 }
+            } catch (SocketException e) {
+                if (conectado.get()) {
+                    System.err.println("✗ Conexión perdida con el servidor");
+                    manejarDesconexion();
+                }
             } catch (IOException e) {
-                if (conectado) {
-                    System.err.println("Error en listener: " + e.getMessage());
-                    desconectar();
+                if (conectado.get()) {
+                    System.err.println("✗ Error en listener: " + e.getMessage());
+                    manejarDesconexion();
                 }
             }
         });
@@ -72,6 +100,105 @@ public class HospitalClient {
         listenerThread.setDaemon(true);
         listenerThread.setName("HospitalClient-Listener");
         listenerThread.start();
+    }
+
+    private void iniciarWatchdog() {
+        watchdogThread = new Thread(() -> {
+            while (conectado.get()) {
+                try {
+                    Thread.sleep(30000); // Verificar cada 30 segundos
+
+                    if (!verificarConexion()) {
+                        System.err.println("✗ Watchdog: Conexión no responde");
+                        manejarDesconexion();
+                        break;
+                    }
+
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
+
+        watchdogThread.setDaemon(true);
+        watchdogThread.setName("HospitalClient-Watchdog");
+        watchdogThread.start();
+    }
+
+    private boolean verificarConexion() {
+        if (socket == null || socket.isClosed()) {
+            return false;
+        }
+
+        try {
+            out.println("PING");
+            return !out.checkError();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void manejarDesconexion() {
+        if (reconectando.get()) {
+            return;
+        }
+
+        conectado.set(false);
+        notificarEstadoConexion(false);
+
+        System.out.println("Intentando reconexión...");
+
+        Platform.runLater(() -> {
+            if (onMensajeRecibido != null) {
+                onMensajeRecibido.accept("ERROR|Conexión perdida con el servidor");
+            }
+        });
+
+        // Intentar reconexión en segundo plano
+        new Thread(this::intentarReconexion).start();
+    }
+
+    private void intentarReconexion() {
+        if (reconectando.getAndSet(true)) {
+            return;
+        }
+
+        cerrarRecursos();
+
+        while (intentosReconexion < MAX_INTENTOS_RECONEXION) {
+            intentosReconexion++;
+
+            System.out.println("Intento de reconexión " + intentosReconexion + "/" + MAX_INTENTOS_RECONEXION);
+
+            try {
+                Thread.sleep(DELAY_RECONEXION_MS);
+                conectar(lastHost, lastPort);
+
+                System.out.println(" Reconexión exitosa");
+                reconectando.set(false);
+
+                Platform.runLater(() -> {
+                    if (onMensajeRecibido != null) {
+                        onMensajeRecibido.accept("NOTIFICACION|RECONEXION|Conexión restablecida");
+                    }
+                });
+
+                return;
+
+            } catch (Exception e) {
+                System.err.println(" Reconexión fallida: " + e.getMessage());
+            }
+        }
+
+        // Reconexión fallida después de todos los intentos
+        reconectando.set(false);
+        System.err.println("✗ No se pudo reconectar después de " + MAX_INTENTOS_RECONEXION + " intentos");
+
+        Platform.runLater(() -> {
+            if (onMensajeRecibido != null) {
+                onMensajeRecibido.accept("ERROR|No se pudo reconectar al servidor. Reinicie la aplicación.");
+            }
+        });
     }
 
     private void procesarMensaje(String mensaje) {
@@ -82,22 +209,22 @@ public class HospitalClient {
         String[] partes = mensaje.split("\\|", 2);
         String tipo = partes[0];
 
-        // Verificar si es una notificación asíncrona
+        if ("PONG".equals(tipo)) {
+            return;
+        }
+
         if ("NOTIFICACION".equals(tipo) || "MENSAJE".equals(tipo)) {
-            // Mensaje asíncrono (notificación o mensaje de chat)
             if (onMensajeRecibido != null) {
                 Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
             }
         } else {
-            // Respuesta a un comando (puede tener callback pendiente)
-            // Por ahora, enviamos todo al listener general
             if (onMensajeRecibido != null) {
                 Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
             }
         }
     }
 
-    public String enviarComandoSync(String comando) throws IOException {
+    /*public String enviarComandoSync(String comando) throws IOException {
         if (!conectado) {
             throw new IOException("No hay conexión con el servidor");
         }
@@ -111,9 +238,9 @@ public class HospitalClient {
 
         return respuesta;
     }
-
+*/
     public void enviarComando(String comando, Consumer<String> callback) {
-        if (!conectado) {
+        if (!conectado.get()) {
             if (callback != null) {
                 Platform.runLater(() -> callback.accept("ERROR|No hay conexión con el servidor"));
             }
@@ -125,8 +252,16 @@ public class HospitalClient {
                 System.out.println("→ Enviando: " + comando);
                 out.println(comando);
 
-                // Esperar respuesta
+                if (out.checkError()) {
+                    throw new IOException("Error al enviar comando");
+                }
+
                 String respuesta = in.readLine();
+
+                if (respuesta == null) {
+                    throw new IOException("Servidor cerró la conexión");
+                }
+
                 System.out.println("← Respuesta: " + respuesta);
 
                 if (callback != null) {
@@ -135,9 +270,13 @@ public class HospitalClient {
                 }
 
             } catch (IOException e) {
-                System.err.println("Error enviando comando: " + e.getMessage());
+                System.err.println("✗ Error enviando comando: " + e.getMessage());
+                manejarDesconexion();
+
                 if (callback != null) {
-                    Platform.runLater(() -> callback.accept("ERROR|Error de comunicación: " + e.getMessage()));
+                    Platform.runLater(() ->
+                            callback.accept("ERROR|Error de comunicación: " + e.getMessage())
+                    );
                 }
             }
         }).start();
@@ -147,22 +286,41 @@ public class HospitalClient {
         this.onMensajeRecibido = listener;
     }
 
-    public void desconectar() {
-        conectado = false;
+    public void setOnEstadoConexion(Consumer<Boolean> listener) {
+        this.onEstadoConexion = listener;
+    }
 
+    private void notificarEstadoConexion(boolean conectado) {
+        if (onEstadoConexion != null) {
+            Platform.runLater(() -> onEstadoConexion.accept(conectado));
+        }
+    }
+    private void cerrarRecursos() {
         try {
             if (out != null) out.close();
             if (in != null) in.close();
-            if (socket != null) socket.close();
-
-            System.out.println("Desconectado del servidor");
+            if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
-            System.err.println("Error al desconectar: " + e.getMessage());
+            System.err.println("Error cerrando recursos: " + e.getMessage());
         }
     }
 
+    public void desconectar() {
+        conectado.set(false);
+        reconectando.set(false);
+
+        if (watchdogThread != null && watchdogThread.isAlive()) {
+            watchdogThread.interrupt();
+        }
+
+        cerrarRecursos();
+
+        System.out.println("Desconectado del servidor");
+        notificarEstadoConexion(false);
+    }
+
     public boolean isConectado() {
-        return conectado && socket != null && !socket.isClosed();
+        return conectado.get() && socket != null && !socket.isClosed();
     }
 
     public void login(String usuario, String clave, Consumer<String> callback) {

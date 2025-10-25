@@ -1,5 +1,6 @@
 package hospital.logica;
 
+import hospital.datos.DetalleRecetaDatos;
 import hospital.datos.RecetaDatos;
 import hospital.model.*;
 import java.sql.SQLException;
@@ -8,6 +9,7 @@ import java.util.List;
 
 public class RecetaLogica {
     private final RecetaDatos datos = new RecetaDatos();
+    private final DetalleRecetaDatos detallesDatos = new DetalleRecetaDatos();
 
     public List<Receta> listar() {
         try {
@@ -35,10 +37,38 @@ public class RecetaLogica {
 
     public Receta crearReceta(Receta receta) throws Exception {
         validarReceta(receta);
-        if (datos.insert(receta))
+        if (receta.getDetalles() == null || receta.getDetalles().isEmpty()) {
+            throw new Exception("La receta debe tener al menos un medicamento.");
+        }
+
+        try {
+            boolean recetaInsertada = datos.insert(receta);
+            if (!recetaInsertada) {
+                throw new Exception("No se pudo insertar la receta en la base de datos.");
+            }
+
+            boolean detallesInsertados = detallesDatos.insertBatch(
+                    receta.getId(),
+                    receta.getDetalles()
+            );
+
+            if (!detallesInsertados) {
+                try {
+                    datos.delete(receta.getId());
+                } catch (SQLException e) {
+                    System.err.println("Error al limpiar receta fallida: " + e.getMessage());
+                }
+                throw new Exception("No se pudieron insertar los detalles de la receta.");
+            }
+
+            System.out.println("Receta creada exitosamente: " + receta.getId() +
+                    " con " + receta.getDetalles().size() + " medicamentos");
+
             return receta;
-        else
-            throw new Exception("No se pudo insertar la receta en la base de datos.");
+
+        } catch (SQLException e) {
+            throw new Exception("Error en base de datos al crear receta: " + e.getMessage(), e);
+        }
     }
 
     public Receta actualizar(Receta receta) throws Exception {
@@ -80,6 +110,21 @@ public class RecetaLogica {
         }
 
         return datos.listarRecetasPorPaciente(idPaciente);
+    }
+
+    public Receta recargarRecetaCompleta(String recetaId) throws Exception {
+        Receta receta = buscarPorId(recetaId);
+        if (receta == null) {
+            throw new Exception("Receta no encontrada: " + recetaId);
+        }
+
+        try {
+            List<DetalleReceta> detalles = detallesDatos.findByRecetaId(recetaId);
+            receta.setDetalles(detalles);
+            return receta;
+        } catch (SQLException e) {
+            throw new Exception("Error al recargar detalles de receta: " + e.getMessage(), e);
+        }
     }
 
     // =========================

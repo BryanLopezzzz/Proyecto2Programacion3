@@ -112,6 +112,8 @@ public class DashboardController {
         }
         configurarPermisosPorRol(usuario);
         cargarGraficosAsync(usuario);
+
+        inicializarChat();
     }
 
     private void inicializarChat() {

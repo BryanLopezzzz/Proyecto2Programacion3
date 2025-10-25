@@ -6,6 +6,8 @@ import hospital.model.*;
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -789,8 +791,112 @@ private String procesarEliminarMedicamento(String[] partes) {
     }
 
     private String procesarCrearReceta(String[] partes) {
-        // Implementar según la lógica específica de creación de recetas
-        return "ERROR|Funcionalidad en desarrollo";
+
+        if (partes.length < 8) {
+            return "ERROR|Formato incorrecto. Mínimo: CREAR_RECETA|recetaId|pacienteId|medicoId|fecha|fechaRetiro|estado|numDetalles";
+        }
+
+        if (!rol.equals("MEDICO")) {
+            return "ERROR|Solo los médicos pueden crear recetas";
+        }
+
+        try {
+            // Extraer datos de la receta
+            String recetaId = partes[1];
+            String pacienteId = partes[2];
+            String medicoId = partes[3];
+            String fechaStr = partes[4];
+            String fechaRetiroStr = partes[5];
+            String estadoStr = partes[6];
+            int numDetalles = Integer.parseInt(partes[7]);
+
+            // Validar que el médico autenticado es quien crea la receta
+            if (!medicoId.equals(usuarioId)) {
+                return "ERROR|Solo puede crear recetas como el médico autenticado";
+            }
+
+            // Validar que haya suficientes detalles
+            if (partes.length < 8 + numDetalles) {
+                return "ERROR|Faltan detalles de medicamentos. Se esperaban " + numDetalles;
+            }
+
+            // Buscar paciente y médico
+            PacienteLogica pacienteLogica = new PacienteLogica();
+            Paciente paciente = pacienteLogica.buscarPorId(pacienteId);
+            if (paciente == null) {
+                return "ERROR|Paciente no encontrado: " + pacienteId;
+            }
+
+            MedicoLogica medicoLogica = new MedicoLogica();
+            Medico medico = medicoLogica.buscarPorId(medicoId);
+            if (medico == null) {
+                return "ERROR|Médico no encontrado: " + medicoId;
+            }
+
+            // Crear objeto Receta
+            Receta receta = new Receta();
+            receta.setId(recetaId);
+            receta.setPaciente(paciente);
+            receta.setMedico(medico);
+            receta.setFecha(java.time.LocalDate.parse(fechaStr));
+            receta.setFechaRetiro(java.time.LocalDate.parse(fechaRetiroStr));
+            receta.setEstado(EstadoReceta.valueOf(estadoStr));
+
+            // Procesar detalles
+            List<DetalleReceta> detalles = new ArrayList<>();
+            MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+
+            for (int i = 0; i < numDetalles; i++) {
+                String detalleStr = partes[8 + i];
+                String[] detalleParts = detalleStr.split(",", 4);
+
+                if (detalleParts.length < 4) {
+                    return "ERROR|Formato de detalle inválido en posición " + i +
+                            ". Esperado: medCodigo,cantidad,indicaciones,dias";
+                }
+
+                String medCodigo = detalleParts[0];
+                int cantidad = Integer.parseInt(detalleParts[1]);
+                String indicaciones = detalleParts[2];
+                int dias = Integer.parseInt(detalleParts[3]);
+
+                // Buscar medicamento
+                Medicamento medicamento = medicamentoLogica.buscarPorCodigo(medCodigo);
+                if (medicamento == null) {
+                    return "ERROR|Medicamento no encontrado: " + medCodigo;
+                }
+
+                // Crear detalle
+                DetalleReceta detalle = new DetalleReceta();
+                detalle.setMedicamento(medicamento);
+                detalle.setCantidad(cantidad);
+                detalle.setIndicaciones(indicaciones);
+                detalle.setDiasTratamiento(dias);
+
+                detalles.add(detalle);
+            }
+
+            // Asignar detalles a la receta
+            receta.setDetalles(detalles);
+
+            // Guardar en base de datos
+            RecetaLogica recetaLogica = new RecetaLogica();
+            Receta recetaCreada = recetaLogica.crearReceta(receta);
+
+            LOGGER.info("Receta creada: " + recetaId + " por médico " + medicoId);
+
+            return "OK|Receta creada exitosamente|" + recetaCreada.getId();
+
+        } catch (NumberFormatException e) {
+            return "ERROR|Formato numérico inválido: " + e.getMessage();
+        } catch (java.time.format.DateTimeParseException e) {
+            return "ERROR|Formato de fecha inválido. Use YYYY-MM-DD";
+        } catch (IllegalArgumentException e) {
+            return "ERROR|Estado de receta inválido: " + e.getMessage();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error creando receta", e);
+            return "ERROR|Error al crear receta: " + e.getMessage();
+        }
     }
 
     private String procesarActualizarEstadoReceta(String[] partes) {

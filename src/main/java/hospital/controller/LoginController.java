@@ -49,9 +49,8 @@ public class LoginController {
             Alerta.error("Error","El clave es obligatorio.");
             return;
         }
-
-        loginAsync(id, clave);
         conectarAlServidor();
+        loginAsync(id, clave);
     }
 
     private void conectarAlServidor() {

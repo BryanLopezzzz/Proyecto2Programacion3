@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="hospital.controller.ChatController"
+            prefHeight="600.0" prefWidth="800.0">
+
+    <!-- HEADER -->
+    <top>
+        <VBox styleClass="header">
+            <padding>
+                <Insets top="15" right="20" bottom="15" left="20"/>
+            </padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="💬" style="-fx-font-size: 24px;"/>
+                <Label text="Mensajería - Sistema Hospital" styleClass="title">
+                    <font>
+                        <Font name="System Bold" size="18.0"/>
+                    </font>
+                </Label>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Label fx:id="lblUsuarioActual" styleClass="user-label">
+                    <font>
+                        <Font size="13.0"/>
+                    </font>
+                </Label>
+
+                <ProgressIndicator fx:id="progressIndicator"
+                                   prefHeight="25.0" prefWidth="25.0"
+                                   visible="false"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- CENTER - Área de mensajes -->
+    <center>
+        <VBox spacing="10" style="-fx-background-color: #f5f5f5;">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <!-- Área de mensajes -->
+            <Label text="Mensajes:" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+            <TextArea fx:id="txtAreaMensajes"
+                      editable="false"
+                      wrapText="true"
+                      VBox.vgrow="ALWAYS"
+                      style="-fx-font-family: 'Courier New'; -fx-font-size: 12px;"
+                      promptText="Los mensajes aparecerán aquí..."/>
+
+            <!-- Campo de entrada de mensaje -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="txtMensaje"
+                           promptText="Escribe tu mensaje aquí..."
+                           HBox.hgrow="ALWAYS"
+                           onAction="#enviarMensaje"
+                           style="-fx-font-size: 13px;">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </TextField>
+
+                <Button fx:id="btnEnviar"
+                        text="Enviar"
+                        onAction="#enviarMensaje"
+                        styleClass="btn-primary"
+                        defaultButton="true">
+                    <font>
+                        <Font size="13.0"/>
+                    </font>
+                </Button>
+            </HBox>
+        </VBox>
+    </center>
+
+    <!-- RIGHT - Lista de usuarios -->
+    <right>
+        <VBox spacing="10" prefWidth="250" style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 0 1;">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="👥 Usuarios Activos" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnActualizar"
+                        text="🔄"
+                        onAction="#actualizarLista"
+                        styleClass="btn-icon"
+                        tooltip="Actualizar lista">
+                    <tooltip>
+                        <Tooltip text="Actualizar lista de usuarios"/>
+                    </tooltip>
+                </Button>
+            </HBox>
+
+            <Separator/>
+
+            <Label text="Selecciona un usuario para enviar mensaje:"
+                   wrapText="true"
+                   style="-fx-font-size: 11px; -fx-text-fill: #666;">
+                <VBox.margin>
+                    <Insets top="5" bottom="5"/>
+                </VBox.margin>
+            </Label>
+
+            <ListView fx:id="lstUsuariosActivos"
+                      VBox.vgrow="ALWAYS"
+                      style="-fx-font-size: 13px;"/>
+
+            <Separator/>
+
+            <Button fx:id="btnCerrar"
+                    text="Cerrar"
+                    onAction="#cerrarVentana"
+                    maxWidth="Infinity"
+                    styleClass="btn-secondary">
+                <font>
+                    <Font size="13.0"/>
+                </font>
+            </Button>
+        </VBox>
+    </right>
+
+    <!-- BOTTOM - Instrucciones -->
+    <bottom>
+        <HBox alignment="CENTER_LEFT" spacing="5"
+              style="-fx-background-color: #f9f9f9; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;">
+            <padding>
+                <Insets top="8" right="15" bottom="8" left="15"/>
+            </padding>
+
+            <Label text="ℹ️" style="-fx-font-size: 12px;"/>
+            <Label text="Selecciona un usuario de la lista y escribe tu mensaje para comunicarte en tiempo real"
+                   wrapText="true"
+                   style="-fx-font-size: 11px; -fx-text-fill: #666;"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

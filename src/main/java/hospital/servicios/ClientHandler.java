@@ -19,6 +19,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
     private String rol = "DESCONOCIDO";
     private String nombre = "anonimo";
     private String usuarioId = null;
+    private boolean activo = true;
 
     private static final Logger LOGGER = Logger.getLogger("HospitalServer");
 
@@ -62,16 +63,19 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
 
     private String procesarMensaje(String mensaje) {
         try {
-            String[] partes = mensaje.split("\\|");
+            String[] partes = mensaje.split("\\|",-1);
             String comando = partes[0];
 
             switch (comando) {
+                // ===== AUTENTICACIÓN =====
                 case "LOGIN":
                     return procesarLogin(partes);
                 case "LOGOUT":
                     return procesarLogout();
                 case "CAMBIAR_CLAVE":
                     return procesarCambiarClave(partes);
+
+                // ===== MÉDICOS =====
                 case "LISTAR_MEDICOS":
                     return procesarListarMedicos();
                 case "BUSCAR_MEDICO":
@@ -82,27 +86,73 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
                     return procesarModificarMedico(partes);
                 case "ELIMINAR_MEDICO":
                     return procesarEliminarMedico(partes);
+
+                // ===== FARMACEUTAS =====
+                case "LISTAR_FARMACEUTAS":
+                    return procesarListarFarmaceutas();
+                case "BUSCAR_FARMACEUTA":
+                    return procesarBuscarFarmaceuta(partes);
+                case "AGREGAR_FARMACEUTA":
+                    return procesarAgregarFarmaceuta(partes);
+                case "MODIFICAR_FARMACEUTA":
+                    return procesarModificarFarmaceuta(partes);
+                case "ELIMINAR_FARMACEUTA":
+                    return procesarEliminarFarmaceuta(partes);
+
+                // ===== PACIENTES =====
                 case "LISTAR_PACIENTES":
                     return procesarListarPacientes();
                 case "BUSCAR_PACIENTE":
                     return procesarBuscarPaciente(partes);
                 case "AGREGAR_PACIENTE":
                     return procesarAgregarPaciente(partes);
-                case "LISTAR_FARMACEUTAS":
-                    return procesarListarFarmaceutas();
+                case "MODIFICAR_PACIENTE":
+                    return procesarModificarPaciente(partes);
+                case "ELIMINAR_PACIENTE":
+                    return procesarEliminarPaciente(partes);
+
+                // ===== MEDICAMENTOS =====
                 case "LISTAR_MEDICAMENTOS":
                     return procesarListarMedicamentos();
+                case "BUSCAR_MEDICAMENTO":
+                    return procesarBuscarMedicamento(partes);
+                case "AGREGAR_MEDICAMENTO":
+                    return procesarAgregarMedicamento(partes);
+                case "MODIFICAR_MEDICAMENTO":
+                    return procesarModificarMedicamento(partes);
+                case "ELIMINAR_MEDICAMENTO":
+                    return procesarEliminarMedicamento(partes);
+
+                // ===== RECETAS =====
                 case "LISTAR_RECETAS":
                     return procesarListarRecetas();
+                case "BUSCAR_RECETA":
+                    return procesarBuscarReceta(partes);
+                case "CREAR_RECETA":
+                    return procesarCrearReceta(partes);
                 case "ACTUALIZAR_ESTADO_RECETA":
                     return procesarActualizarEstadoReceta(partes);
+                case "LISTAR_RECETAS_PACIENTE":
+                    return procesarListarRecetasPaciente(partes);
+
+                // ===== DASHBOARD =====
+                case "DASHBOARD_ESTADISTICAS":
+                    return procesarDashboardEstadisticas();
+
+                // ===== MENSAJERÍA =====
+                case "ENVIAR_MENSAJE":
+                    return procesarEnviarMensaje(partes);
+                case "LISTAR_USUARIOS_ACTIVOS":
+                    return procesarListarUsuariosActivos();
+
+                // ===== UTILIDAD =====
                 case "PING":
                     return "PONG|Servidor activo";
-                case "MENSAJE":
-                    return procesarMensajeChat(partes);
+
                 default:
                     return "ERROR|Comando desconocido: " + comando;
             }
+
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error procesando mensaje: " + e.getMessage(), e);
@@ -133,7 +183,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
 
             LOGGER.info("Login exitoso: " + nombre + " (" + rol + ")");
 
-            server.broadcast("NOTIFICACION|LOGIN|" + nombre + "|" + rol, this);
+            server.notificarLogin(this);
 
             return "OK|" + nombre + "|" + rol;
 
@@ -148,10 +198,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
             return "ERROR|No hay sesión activa";
         }
 
-        String nombreAnterior = nombre;
-        String rolAnterior = rol;
-
-        server.broadcast("NOTIFICACION|LOGOUT|" + nombreAnterior + "|" + rolAnterior, this);
+        server.notificarLogout(this);
 
         usuarioId = null;
         nombre = "anonimo";
@@ -195,7 +242,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
 
             return sb.toString();
 
-        } catch (SQLException e) { // ← Ahora captura SQLException específicamente
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error listando médicos", e);
             return "ERROR|" + e.getMessage();
         }
@@ -208,7 +255,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
 
         try {
             MedicoLogica medicoLogica = new MedicoLogica();
-            Medico m = medicoLogica.buscarPorId(partes[1]); // ← SQLException
+            Medico m = medicoLogica.buscarPorId(partes[1]);
 
             if (m == null) {
                 return "ERROR|Médico no encontrado";
@@ -236,7 +283,6 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
             medico.setNombre(partes[2]);
             medico.setEspecialidad(partes[3]);
 
-            // ✅ Crear administrador real con el usuario autenticado
             Administrador admin = obtenerAdministradorAutenticado();
             if (admin == null) {
                 return "ERROR|No se pudo validar el administrador";
@@ -264,13 +310,11 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         try {
             MedicoLogica medicoLogica = new MedicoLogica();
 
-            // Buscar el médico existente para preservar la clave
             Medico medicoExistente = medicoLogica.buscarPorId(partes[1]);
             if (medicoExistente == null) {
                 return "ERROR|Médico no encontrado";
             }
 
-            // Actualizar datos
             medicoExistente.setNombre(partes[2]);
             medicoExistente.setEspecialidad(partes[3]);
 
@@ -383,6 +427,66 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         }
     }
 
+    private String procesarModificarPaciente(String[] partes) {
+        if (partes.length < 5) {
+            return "ERROR|Formato: MODIFICAR_PACIENTE|id|nombre|telefono|fechaNacimiento";
+        }
+
+        if (!rol.equals("ADMINISTRADOR")) {
+            return "ERROR|Solo administradores pueden modificar pacientes";
+        }
+
+        try {
+            PacienteLogica pacienteLogica = new PacienteLogica();
+
+            Paciente pacienteExistente = pacienteLogica.buscarPorId(partes[1]);
+            if (pacienteExistente == null) {
+                return "ERROR|Paciente no encontrado";
+            }
+
+            pacienteExistente.setNombre(partes[2]);
+            pacienteExistente.setTelefono(partes[3]);
+            pacienteExistente.setFechaNacimiento(java.time.LocalDate.parse(partes[4]));
+
+            Administrador admin = obtenerAdministradorAutenticado();
+            if (admin == null) {
+                return "ERROR|No se pudo validar el administrador";
+            }
+
+            pacienteLogica.modificar(admin, pacienteExistente);
+
+            return "OK|Paciente modificado exitosamente";
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+    private String procesarEliminarPaciente(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: ELIMINAR_PACIENTE|id";
+        }
+
+        if (!rol.equals("ADMINISTRADOR")) {
+            return "ERROR|Solo administradores pueden eliminar pacientes";
+        }
+
+        try {
+            Administrador admin = obtenerAdministradorAutenticado();
+            if (admin == null) {
+                return "ERROR|No se pudo validar el administrador";
+            }
+
+            PacienteLogica pacienteLogica = new PacienteLogica();
+            pacienteLogica.eliminar(admin, partes[1]);
+
+            return "OK|Paciente eliminado exitosamente";
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
     // ==================== FARMACEUTAS ====================
 
     private String procesarListarFarmaceutas() {
@@ -403,26 +507,242 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         }
     }
 
-    // ==================== MEDICAMENTOS ====================
+    private String procesarBuscarFarmaceuta(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: BUSCAR_FARMACEUTA|id";
+        }
 
-    private String procesarListarMedicamentos() {
         try {
-            MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
-            var medicamentos = medicamentoLogica.listar();
+            FarmaceutaLogica farmaceutaLogica = new FarmaceutaLogica();
+            Farmaceuta f = farmaceutaLogica.buscarPorId(partes[1]);
 
-            StringBuilder sb = new StringBuilder("OK");
-            for (Medicamento m : medicamentos) {
-                sb.append("|").append(m.getCodigo())
-                        .append(",").append(m.getNombre())
-                        .append(",").append(m.getPresentacion());
+            if (f == null) {
+                return "ERROR|Farmaceuta no encontrado";
             }
 
-            return sb.toString();
+            return "OK|" + f.getId() + "," + f.getNombre();
 
         } catch (SQLException e) {
             return "ERROR|" + e.getMessage();
         }
     }
+
+    private String procesarAgregarFarmaceuta(String[] partes) {
+        if (partes.length < 3) {
+            return "ERROR|Formato: AGREGAR_FARMACEUTA|id|nombre";
+        }
+
+        if (!rol.equals("ADMINISTRADOR")) {
+            return "ERROR|Solo administradores pueden agregar farmaceutas";
+        }
+
+        try {
+            Farmaceuta farmaceuta = new Farmaceuta();
+            farmaceuta.setId(partes[1]);
+            farmaceuta.setNombre(partes[2]);
+
+            Administrador admin = obtenerAdministradorAutenticado();
+            if (admin == null) {
+                return "ERROR|No se pudo validar el administrador";
+            }
+
+            FarmaceutaLogica farmaceutaLogica = new FarmaceutaLogica();
+            farmaceutaLogica.agregar(admin, farmaceuta);
+
+            return "OK|Farmaceuta agregado exitosamente";
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+    private String procesarModificarFarmaceuta(String[] partes) {
+        if (partes.length < 3) {
+            return "ERROR|Formato: MODIFICAR_FARMACEUTA|id|nombre";
+        }
+
+        if (!rol.equals("ADMINISTRADOR")) {
+            return "ERROR|Solo administradores pueden modificar farmaceutas";
+        }
+
+        try {
+            FarmaceutaLogica farmaceutaLogica = new FarmaceutaLogica();
+
+            Farmaceuta farmaceutaExistente = farmaceutaLogica.buscarPorId(partes[1]);
+            if (farmaceutaExistente == null) {
+                return "ERROR|Farmaceuta no encontrado";
+            }
+
+            farmaceutaExistente.setNombre(partes[2]);
+
+            Administrador admin = obtenerAdministradorAutenticado();
+            if (admin == null) {
+                return "ERROR|No se pudo validar el administrador";
+            }
+
+            farmaceutaLogica.modificar(admin, farmaceutaExistente);
+
+            return "OK|Farmaceuta modificado exitosamente";
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+    private String procesarEliminarFarmaceuta(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: ELIMINAR_FARMACEUTA|id";
+        }
+
+        if (!rol.equals("ADMINISTRADOR")) {
+            return "ERROR|Solo administradores pueden eliminar farmaceutas";
+        }
+
+        try {
+            Administrador admin = obtenerAdministradorAutenticado();
+            if (admin == null) {
+                return "ERROR|No se pudo validar el administrador";
+            }
+
+            FarmaceutaLogica farmaceutaLogica = new FarmaceutaLogica();
+            farmaceutaLogica.borrar(admin, partes[1]);
+
+            return "OK|Farmaceuta eliminado exitosamente";
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+// ==================== MEDICAMENTOS ====================
+
+private String procesarListarMedicamentos() {
+    try {
+        MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+        var medicamentos = medicamentoLogica.listar();
+
+        StringBuilder sb = new StringBuilder("OK");
+        for (Medicamento m : medicamentos) {
+            sb.append("|").append(m.getCodigo())
+                    .append(",").append(m.getNombre())
+                    .append(",").append(m.getPresentacion());
+        }
+
+        return sb.toString();
+
+    } catch (SQLException e) {
+        return "ERROR|" + e.getMessage();
+    }
+}
+
+private String procesarBuscarMedicamento(String[] partes) {
+    if (partes.length < 2) {
+        return "ERROR|Formato: BUSCAR_MEDICAMENTO|codigo";
+    }
+
+    try {
+        MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+        Medicamento m = medicamentoLogica.buscarPorCodigo(partes[1]);
+
+        if (m == null) {
+            return "ERROR|Medicamento no encontrado";
+        }
+
+        return "OK|" + m.getCodigo() + "," + m.getNombre() + "," + m.getPresentacion();
+
+    } catch (SQLException e) {
+        return "ERROR|" + e.getMessage();
+    }
+}
+
+private String procesarAgregarMedicamento(String[] partes) {
+    if (partes.length < 4) {
+        return "ERROR|Formato: AGREGAR_MEDICAMENTO|codigo|nombre|presentacion";
+    }
+
+    if (!rol.equals("ADMINISTRADOR")) {
+        return "ERROR|Solo administradores pueden agregar medicamentos";
+    }
+
+    try {
+        Medicamento medicamento = new Medicamento();
+        medicamento.setCodigo(partes[1]);
+        medicamento.setNombre(partes[2]);
+        medicamento.setPresentacion(partes[3]);
+
+        Administrador admin = obtenerAdministradorAutenticado();
+        if (admin == null) {
+            return "ERROR|No se pudo validar el administrador";
+        }
+
+        MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+        medicamentoLogica.agregar(admin, medicamento);
+
+        return "OK|Medicamento agregado exitosamente";
+
+    } catch (Exception e) {
+        return "ERROR|" + e.getMessage();
+    }
+}
+
+private String procesarModificarMedicamento(String[] partes) {
+    if (partes.length < 4) {
+        return "ERROR|Formato: MODIFICAR_MEDICAMENTO|codigo|nombre|presentacion";
+    }
+
+    if (!rol.equals("ADMINISTRADOR")) {
+        return "ERROR|Solo administradores pueden modificar medicamentos";
+    }
+
+    try {
+        MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+
+        Medicamento medicamentoExistente = medicamentoLogica.buscarPorCodigo(partes[1]);
+        if (medicamentoExistente == null) {
+            return "ERROR|Medicamento no encontrado";
+        }
+
+        medicamentoExistente.setNombre(partes[2]);
+        medicamentoExistente.setPresentacion(partes[3]);
+
+        Administrador admin = obtenerAdministradorAutenticado();
+        if (admin == null) {
+            return "ERROR|No se pudo validar el administrador";
+        }
+
+        medicamentoLogica.modificar(admin, medicamentoExistente);
+
+        return "OK|Medicamento modificado exitosamente";
+
+    } catch (Exception e) {
+        return "ERROR|" + e.getMessage();
+    }
+}
+
+private String procesarEliminarMedicamento(String[] partes) {
+    if (partes.length < 2) {
+        return "ERROR|Formato: ELIMINAR_MEDICAMENTO|codigo";
+    }
+
+    if (!rol.equals("ADMINISTRADOR")) {
+        return "ERROR|Solo administradores pueden eliminar medicamentos";
+    }
+
+    try {
+        Administrador admin = obtenerAdministradorAutenticado();
+        if (admin == null) {
+            return "ERROR|No se pudo validar el administrador";
+        }
+
+        MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
+        medicamentoLogica.borrar(admin, partes[1]);
+
+        return "OK|Medicamento eliminado exitosamente";
+
+    } catch (Exception e) {
+        return "ERROR|" + e.getMessage();
+    }
+}
 
     // ==================== RECETAS ====================
 
@@ -447,6 +767,32 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         }
     }
 
+    private String procesarBuscarReceta(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: BUSCAR_RECETA|id";
+        }
+
+        try {
+            RecetaLogica recetaLogica = new RecetaLogica();
+            Receta r = recetaLogica.buscarPorId(partes[1]);
+
+            if (r == null) {
+                return "ERROR|Receta no encontrada";
+            }
+
+            return "OK|" + r.getId() + "," + r.getPaciente().getNombre() + ","
+                    + r.getMedico().getNombre() + "," + r.getFecha() + "," + r.getEstado();
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+    private String procesarCrearReceta(String[] partes) {
+        // Implementar según la lógica específica de creación de recetas
+        return "ERROR|Funcionalidad en desarrollo";
+    }
+
     private String procesarActualizarEstadoReceta(String[] partes) {
         if (partes.length < 3) {
             return "ERROR|Formato: ACTUALIZAR_ESTADO_RECETA|recetaId|nuevoEstado";
@@ -457,7 +803,6 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         }
 
         try {
-            // Crear farmaceuta autenticado
             Farmaceuta farmaceuta = obtenerFarmaceutaAutenticado();
             if (farmaceuta == null) {
                 return "ERROR|No se pudo validar el farmaceuta";
@@ -474,24 +819,97 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         }
     }
 
-    // ==================== CHAT ====================
-
-    private String procesarMensajeChat(String[] partes) {
-        if (partes.length < 3) {
-            return "ERROR|Formato: MENSAJE|usuarioDestino|texto";
+    private String procesarListarRecetasPaciente(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: LISTAR_RECETAS_PACIENTE|pacienteId";
         }
 
+        try {
+            RecetaLogica recetaLogica = new RecetaLogica();
+            var recetas = recetaLogica.listarRecetasPorPaciente(partes[1]);
+
+            StringBuilder sb = new StringBuilder("OK");
+            for (Receta r : recetas) {
+                sb.append("|").append(r.getId())
+                        .append(",").append(r.getPaciente().getNombre())
+                        .append(",").append(r.getMedico().getNombre())
+                        .append(",").append(r.getFecha())
+                        .append(",").append(r.getEstado());
+            }
+
+            return sb.toString();
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+// ==================== DASHBOARD ====================
+
+    private String procesarDashboardEstadisticas() {
+        try {
+            EstadisticaRecetaLogica estadisticaLogica = new EstadisticaRecetaLogica();
+
+            // Obtener estadísticas por estado
+            var recetasPorEstado = estadisticaLogica.recetasPorEstado();
+
+            StringBuilder sb = new StringBuilder("OK");
+            for (var entry : recetasPorEstado.entrySet()) {
+                sb.append("|").append(entry.getKey()).append(",").append(entry.getValue());
+            }
+
+            return sb.toString();
+
+        } catch (Exception e) {
+            return "ERROR|" + e.getMessage();
+        }
+    }
+
+    // ==================== CHAT ====================
+
+    private String procesarEnviarMensaje(String[] partes) {
+        if (partes.length < 3) {
+            return "ERROR|Formato: ENVIAR_MENSAJE|usuarioDestinoId|mensaje";
+        }
+
+        if (usuarioId == null) {
+            return "ERROR|Debe estar autenticado para enviar mensajes";
+        }
+
+        String destinatarioId = partes[1];
+        String mensaje = partes[2];
+
+        // Notificar al servidor para que envíe el mensaje al destinatario
+        boolean enviado = server.enviarMensajePrivado(this, destinatarioId, mensaje);
+
+        if (enviado) {
+            return "OK|Mensaje enviado a " + destinatarioId;
+        } else {
+            return "ERROR|Usuario destinatario no está conectado o no existe";
+        }
+    }
+
+    private String procesarListarUsuariosActivos() {
         if (usuarioId == null) {
             return "ERROR|Debe estar autenticado";
         }
 
-        String destinatario = partes[1];
-        String texto = partes[2];
+        var usuariosActivos = server.obtenerUsuariosActivos();
 
-        String mensajeChat = "CHAT|" + nombre + "|" + destinatario + "|" + texto;
-        server.broadcast(mensajeChat, this);
+        StringBuilder sb = new StringBuilder("OK");
+        for (ClientHandler cliente : usuariosActivos) {
+            // No incluir al usuario actual en la lista
+            if (cliente != this && cliente.isAutenticado()) {
+                sb.append("|")
+                        .append(cliente.getUsuarioId())
+                        .append(",")
+                        .append(cliente.getNombreUsuario())
+                        .append(",")
+                        .append(cliente.getRol());
+            }
+        }
 
-        return "OK|Mensaje enviado";
+        return sb.toString();
     }
 
     // ==================== UTILIDADES ====================
@@ -541,6 +959,14 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Error cerrando conexión: " + e.getMessage());
         }
+    }
+
+    public boolean isAutenticado() {
+        return usuarioId != null && !usuarioId.equals("anonimo");
+    }
+
+    public boolean isActivo() {
+        return activo;
     }
 
     public String getUsuarioId() { return usuarioId; }

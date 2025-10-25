@@ -7,11 +7,17 @@ import hospital.logica.Sesion;
 import hospital.logica.UsuarioManager;
 import hospital.model.Medico;
 import hospital.model.Usuario;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -24,6 +30,11 @@ import java.sql.SQLException;
 import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+
+import hospital.servicios.HospitalClient;
+import javafx.scene.control.ListView;
+import javafx.util.Duration;
 
 public class DashboardController {
     @FXML
@@ -66,8 +77,18 @@ public class DashboardController {
     private Pane panePieChart;
 
     @FXML
+    private ListView<String> lstUsuariosActivos;
+
+    @FXML
+    private Label lblUsuariosConectados;
+
+    @FXML
+    private Button btnAbrirChat;
+
+    @FXML
     private ProgressIndicator progressIndicator;
 
+    private HospitalClient client;
     private final DashboardLogica dashboardLogica = new DashboardLogica();
     private final UsuarioManager usuarioManager = new UsuarioManager();
     private LoginLogica loginLogica;
@@ -91,6 +112,138 @@ public class DashboardController {
         }
         configurarPermisosPorRol(usuario);
         cargarGraficosAsync(usuario);
+    }
+
+    private void inicializarChat() {
+        try {
+            client = HospitalClient.getInstance();
+
+            client.setOnMensajeRecibido(this::procesarNotificacion);
+
+            actualizarUsuariosActivos();
+
+        } catch (Exception e) {
+            System.err.println("Error inicializando chat: " + e.getMessage());
+        }
+    }
+
+    private void procesarNotificacion(String mensaje) {
+        Platform.runLater(() -> {
+            try {
+                String[] partes = mensaje.split("\\|");
+                String tipo = partes[0];
+
+                if ("NOTIFICACION".equals(tipo) && partes.length >= 5) {
+                    String accion = partes[1];
+                    String usuarioNombre = partes[3];
+
+                    if ("LOGIN".equals(accion)) {
+                        mostrarNotificacion("Usuario conectado",
+                                usuarioNombre + " se ha conectado al sistema");
+                        actualizarUsuariosActivos();
+                    } else if ("LOGOUT".equals(accion)) {
+                        mostrarNotificacion("Usuario desconectado",
+                                usuarioNombre + " se ha desconectado");
+                        actualizarUsuariosActivos();
+                    }
+                } else if ("MENSAJE".equals(tipo) && partes.length >= 4) {
+                    String remitenteNombre = partes[2];
+                    String texto = partes[3];
+
+                    mostrarMensajeRecibido(remitenteNombre, texto);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error procesando notificación: " + e.getMessage());
+            }
+        });
+    }
+
+    private void actualizarUsuariosActivos() {
+        if (client == null || !client.isConectado()) {
+            return;
+        }
+
+        client.enviarComando("LISTAR_USUARIOS_ACTIVOS", respuesta -> {
+            Platform.runLater(() -> {
+                try {
+                    String[] partes = respuesta.split("\\|");
+
+                    if ("OK".equals(partes[0])) {
+                        ObservableList<String> usuarios = FXCollections.observableArrayList();
+
+                        for (int i = 1; i < partes.length; i++) {
+                            String[] datos = partes[i].split(",");
+                            if (datos.length >= 3) {
+                                String nombre = datos[1];
+                                String rol = datos[2];
+                                usuarios.add(nombre + " (" + rol + ")");
+                            }
+                        }
+
+                        if (lstUsuariosActivos != null) {
+                            lstUsuariosActivos.setItems(usuarios);
+                        }
+
+                        if (lblUsuariosConectados != null) {
+                            lblUsuariosConectados.setText(usuarios.size() + " usuarios conectados");
+                        }
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("Error actualizando usuarios: " + e.getMessage());
+                }
+            });
+        });
+    }
+
+    private void mostrarNotificacion(String titulo, String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+
+        // Hacer que se cierre automáticamente después de 3 segundos
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> alert.close()));
+        timeline.play();
+
+        alert.show();
+    }
+
+    private void mostrarMensajeRecibido(String remitente, String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Nuevo Mensaje");
+        alert.setHeaderText("Mensaje de: " + remitente);
+        alert.setContentText(mensaje);
+
+        ButtonType btnResponder = new ButtonType("Responder");
+        ButtonType btnCerrar = new ButtonType("Cerrar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(btnResponder, btnCerrar);
+
+        Optional<ButtonType> resultado = alert.showAndWait();
+        if (resultado.isPresent() && resultado.get() == btnResponder) {
+            abrirChat();
+        }
+    }
+
+    @FXML
+    public void abrirChat() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/chat.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Mensajería - Sistema Hospital");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.NONE);
+            stage.initOwner(btnAbrirChat.getScene().getWindow());
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Alerta.error("Error", "No se pudo abrir la ventana de chat: " + e.getMessage());
+        }
     }
 
     private void cargarGraficosAsync(Usuario usuario) {
@@ -421,6 +574,12 @@ public class DashboardController {
     }
     @FXML
     public void logout(){
+        if (client != null && client.isConectado()) {
+            client.logout(respuesta -> {
+                System.out.println("Logout del servidor: " + respuesta);
+            });
+        }
+
         if (loginLogica != null) {
             loginLogica.logout();
         }

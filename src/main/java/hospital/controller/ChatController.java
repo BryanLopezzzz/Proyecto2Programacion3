@@ -1,52 +1,54 @@
 package hospital.controller;
 
 import hospital.logica.Sesion;
-import hospital.servicios.HospitalClient;
+import hospital.servicios.ServiceProxy;
+import hospital.servicios.ServiceProxy.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
+public class ChatController {
+    @FXML private ListView<UsuarioActivo> lstUsuariosActivos;
+    @FXML private TextArea txtAreaMensajes;
+    @FXML private TextField txtMensaje;
+    @FXML private Button btnEnviar;
+    @FXML private Button btnActualizar;
+    @FXML private Button btnCerrar;
+    @FXML private Label lblUsuarioActual;
+    @FXML private ProgressIndicator progressIndicator;
 
-public class ChatController { //Nueva clase para el Frontend
-    @FXML
-    private ListView<UsuarioActivo> lstUsuariosActivos;
-
-    @FXML
-    private TextArea txtAreaMensajes;
-
-    @FXML
-    private TextField txtMensaje;
-
-    @FXML
-    private Button btnEnviar;
-
-    @FXML
-    private Button btnActualizar;
-
-    @FXML
-    private Button btnCerrar;
-
-    @FXML
-    private Label lblUsuarioActual;
-
-    @FXML
-    private ProgressIndicator progressIndicator;
-
-    private HospitalClient client;
+    private final ServiceProxy serviceProxy = ServiceProxy.getInstance();
     private ObservableList<UsuarioActivo> usuariosActivos;
 
-    public void initialize(URL location, ResourceBundle resources) {
+    @FXML
+    public void initialize() {
         usuariosActivos = FXCollections.observableArrayList();
         lstUsuariosActivos.setItems(usuariosActivos);
 
+        configurarListaUsuarios();
+
+        if (progressIndicator != null) {
+            progressIndicator.setVisible(false);
+        }
+
+        // Mostrar usuario actual
+        if (Sesion.getUsuario() != null) {
+            lblUsuarioActual.setText("Usuario: " + Sesion.getUsuario().getNombre());
+        }
+
+        // ✅ CAMBIO: Configurar listener de mensajes con ServiceProxy
+        configurarListenerMensajes();
+
+        // Cargar usuarios activos
+        cargarUsuariosActivos();
+
+        agregarMensajeSistema("Conectado al sistema de mensajería");
+    }
+
+    private void configurarListaUsuarios() {
         lstUsuariosActivos.setCellFactory(param -> new ListCell<UsuarioActivo>() {
             @Override
             protected void updateItem(UsuarioActivo item, boolean empty) {
@@ -60,86 +62,32 @@ public class ChatController { //Nueva clase para el Frontend
                 }
             }
         });
-
-        if (progressIndicator != null) {
-            progressIndicator.setVisible(false);
-        }
-
-        // Mostrar usuario actual
-        if (Sesion.getUsuario() != null) {
-            lblUsuarioActual.setText("Usuario: " + Sesion.getUsuario().getNombre());
-        }
-
-        inicializarCliente();
     }
 
-    private void inicializarCliente() {
-        try {
-            // Crear instancia del cliente
-            client = HospitalClient.getInstance();
+    private void configurarListenerMensajes() {
+        // ✅ NUEVO: Listener simplificado con ServiceProxy
+        serviceProxy.setOnMensajeRecibido(mensaje -> {
+            switch (mensaje.getTipo()) {
+                case MENSAJE:
+                    mostrarMensajeRecibido(
+                            mensaje.getRemitente(),
+                            mensaje.getContenido()
+                    );
+                    break;
 
-            // Verificar si ya está conectado
-            if (!client.isConectado()) {
-                Alerta.error("Error", "No hay conexión con el servidor. " +
-                        "Por favor, reinicie la aplicación.");
-                return;
-            }
+                case USUARIO_CONECTADO:
+                    agregarMensajeSistema(mensaje.getContenido());
+                    cargarUsuariosActivos();
+                    break;
 
-            // Configurar el listener de mensajes
-            client.setOnMensajeRecibido(this::procesarMensajeRecibido);
+                case USUARIO_DESCONECTADO:
+                    agregarMensajeSistema(mensaje.getContenido());
+                    cargarUsuariosActivos();
+                    break;
 
-            // Cargar usuarios activos
-            cargarUsuariosActivos();
-
-            agregarMensajeSistema("Conectado al sistema de mensajería");
-
-        } catch (Exception e) {
-            Alerta.error("Error", "Error al inicializar el chat: " + e.getMessage());
-        }
-    }
-
-    private void procesarMensajeRecibido(String mensaje) {
-        Platform.runLater(() -> {
-            try {
-                String[] partes = mensaje.split("\\|", -1);
-                String tipo = partes[0];
-
-                switch (tipo) {
-                    case "MENSAJE":
-                        // Formato: MENSAJE|remitenteId|remitenteNombre|texto
-                        if (partes.length >= 4) {
-                            String remitenteNombre = partes[2];
-                            String texto = partes[3];
-                            mostrarMensajeRecibido(remitenteNombre, texto);
-                        }
-                        break;
-
-                    case "NOTIFICACION":
-                        // Formato: NOTIFICACION|LOGIN/LOGOUT|usuarioId|nombre|rol
-                        if (partes.length >= 5) {
-                            String accion = partes[1];
-                            String usuarioNombre = partes[3];
-                            String rol = partes[4];
-
-                            if ("LOGIN".equals(accion)) {
-                                agregarMensajeSistema(usuarioNombre + " se ha conectado");
-                                cargarUsuariosActivos();
-                            } else if ("LOGOUT".equals(accion)) {
-                                agregarMensajeSistema(usuarioNombre + " se ha desconectado");
-                                cargarUsuariosActivos();
-                            }
-                        }
-                        break;
-
-                    case "ERROR":
-                        if (partes.length >= 2) {
-                            Alerta.error("Error", partes[1]);
-                        }
-                        break;
-                }
-
-            } catch (Exception e) {
-                System.err.println("Error procesando mensaje: " + e.getMessage());
+                case ERROR:
+                    Alerta.error("Error", mensaje.getContenido());
+                    break;
             }
         });
     }
@@ -170,14 +118,12 @@ public class ChatController { //Nueva clase para el Frontend
         alert.setTitle("Nuevo Mensaje");
         alert.setHeaderText("Mensaje de: " + remitente);
         alert.setContentText(mensaje);
-
-        // Hacer que la alerta sea no modal y se cierre automáticamente
         alert.show();
     }
 
     @FXML
     private void cargarUsuariosActivos() {
-        if (client == null || !client.isConectado()) {
+        if (!serviceProxy.isConectado()) {
             Alerta.error("Error", "No hay conexión con el servidor");
             return;
         }
@@ -185,42 +131,27 @@ public class ChatController { //Nueva clase para el Frontend
         mostrarCargando(true);
         deshabilitarControles(true);
 
-        // Enviar petición al servidor
-        client.enviarComando("LISTAR_USUARIOS_ACTIVOS", respuesta -> {
-            Platform.runLater(() -> {
-                try {
-                    String[] partes = respuesta.split("\\|");
+        // ✅ NUEVO: Cargar usuarios con ServiceProxy (simple y limpio)
+        serviceProxy.listarUsuariosActivos(
+                // OnSuccess
+                usuarios -> {
+                    usuariosActivos.clear();
+                    usuariosActivos.addAll(usuarios);
 
-                    if ("OK".equals(partes[0])) {
-                        usuariosActivos.clear();
-
-                        // Parsear usuarios
-                        for (int i = 1; i < partes.length; i++) {
-                            String[] datos = partes[i].split(",");
-                            if (datos.length >= 3) {
-                                String id = datos[0];
-                                String nombre = datos[1];
-                                String rol = datos[2];
-
-                                usuariosActivos.add(new UsuarioActivo(id, nombre, rol));
-                            }
-                        }
-
-                        if (usuariosActivos.isEmpty()) {
-                            agregarMensajeSistema("No hay otros usuarios conectados");
-                        }
-                    } else {
-                        Alerta.error("Error", "Error al cargar usuarios: " + partes[1]);
-                    }
-
-                } catch (Exception e) {
-                    Alerta.error("Error", "Error procesando usuarios: " + e.getMessage());
-                } finally {
                     mostrarCargando(false);
                     deshabilitarControles(false);
+
+                    if (usuarios.isEmpty()) {
+                        agregarMensajeSistema("No hay otros usuarios conectados");
+                    }
+                },
+                // OnError
+                error -> {
+                    mostrarCargando(false);
+                    deshabilitarControles(false);
+                    Alerta.error("Error", error);
                 }
-            });
-        });
+        );
     }
 
     @FXML
@@ -239,48 +170,35 @@ public class ChatController { //Nueva clase para el Frontend
             return;
         }
 
-        if (client == null || !client.isConectado()) {
+        if (!serviceProxy.isConectado()) {
             Alerta.error("Error", "No hay conexión con el servidor");
             return;
         }
 
-        // Deshabilitar controles mientras se envía
         deshabilitarControles(true);
         mostrarCargando(true);
 
-        // Enviar mensaje
-        String comando = "ENVIAR_MENSAJE|" + destinatario.getId() + "|" + mensaje;
+        // ✅ NUEVO: Enviar mensaje con ServiceProxy
+        serviceProxy.enviarMensaje(destinatario.getId(), mensaje, exito -> {
+            mostrarCargando(false);
+            deshabilitarControles(false);
 
-        client.enviarComando(comando, respuesta -> {
-            Platform.runLater(() -> {
-                try {
-                    String[] partes = respuesta.split("\\|");
+            if (exito) {
+                // Mostrar mensaje enviado
+                String timestamp = java.time.LocalTime.now().format(
+                        java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
+                );
+                txtAreaMensajes.appendText(String.format("[%s] Tú → %s: %s\n",
+                        timestamp,
+                        destinatario.getNombre(),
+                        mensaje));
 
-                    if ("OK".equals(partes[0])) {
-                        // Mostrar mensaje enviado
-                        String timestamp = java.time.LocalTime.now().format(
-                                java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
-                        );
-                        txtAreaMensajes.appendText(String.format("[%s] Tú → %s: %s\n",
-                                timestamp,
-                                destinatario.getNombre(),
-                                mensaje));
+                txtMensaje.clear();
+            } else {
+                Alerta.error("Error", "No se pudo enviar el mensaje");
+            }
 
-                        // Limpiar campo de texto
-                        txtMensaje.clear();
-                    } else {
-                        Alerta.error("Error", "Error al enviar mensaje: " +
-                                (partes.length > 1 ? partes[1] : "Desconocido"));
-                    }
-
-                } catch (Exception e) {
-                    Alerta.error("Error", "Error procesando respuesta: " + e.getMessage());
-                } finally {
-                    mostrarCargando(false);
-                    deshabilitarControles(false);
-                    txtMensaje.requestFocus();
-                }
-            });
+            txtMensaje.requestFocus();
         });
     }
 
@@ -305,27 +223,6 @@ public class ChatController { //Nueva clase para el Frontend
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
-        }
-    }
-
-    public static class UsuarioActivo {
-        private final String id;
-        private final String nombre;
-        private final String rol;
-
-        public UsuarioActivo(String id, String nombre, String rol) {
-            this.id = id;
-            this.nombre = nombre;
-            this.rol = rol;
-        }
-
-        public String getId() { return id; }
-        public String getNombre() { return nombre; }
-        public String getRol() { return rol; }
-
-        @Override
-        public String toString() {
-            return nombre + " (" + rol + ")";
         }
     }
 }

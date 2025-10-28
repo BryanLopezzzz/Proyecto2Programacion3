@@ -7,6 +7,7 @@ import hospital.logica.Sesion;
 import hospital.logica.UsuarioManager;
 import hospital.model.Medico;
 import hospital.model.Usuario;
+import hospital.servicios.ServiceProxy;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -93,6 +94,8 @@ public class DashboardController {
     private final UsuarioManager usuarioManager = new UsuarioManager();
     private LoginLogica loginLogica;
 
+    private final ServiceProxy serviceProxy = ServiceProxy.getInstance();
+
     public void setLoginController(LoginLogica loginLogica) {
         this.loginLogica = loginLogica;
     }
@@ -116,18 +119,31 @@ public class DashboardController {
         inicializarChat();
     }
 
+
     private void inicializarChat() {
-        try {
-            client = HospitalClient.getInstance();
-
-            client.setOnMensajeRecibido(this::procesarNotificacion);
-
-            actualizarUsuariosActivos();
-
-        } catch (Exception e) {
-            System.err.println("Error inicializando chat: " + e.getMessage());
+        if (!serviceProxy.isConectado()) {
+            return; // Si no hay servidor, no configurar chat
         }
+
+        serviceProxy.setOnMensajeRecibido(mensaje -> {
+            switch (mensaje.getTipo()) {
+                case USUARIO_CONECTADO:
+                case USUARIO_DESCONECTADO:
+                    mostrarNotificacion("Sistema", mensaje.getContenido());
+                    actualizarUsuariosActivos();
+                    break;
+
+                case MENSAJE:
+                    mostrarMensajeRecibido(
+                            mensaje.getRemitente(),
+                            mensaje.getContenido()
+                    );
+                    break;
+            }
+        });
+        actualizarUsuariosActivos();
     }
+
 
     private void procesarNotificacion(String mensaje) {
         Platform.runLater(() -> {
@@ -162,41 +178,33 @@ public class DashboardController {
     }
 
     private void actualizarUsuariosActivos() {
-        if (client == null || !client.isConectado()) {
+        if (!serviceProxy.isConectado()) {
             return;
         }
 
-        client.enviarComando("LISTAR_USUARIOS_ACTIVOS", respuesta -> {
-            Platform.runLater(() -> {
-                try {
-                    String[] partes = respuesta.split("\\|");
+        // ✅ NUEVO: Actualizar lista con ServiceProxy
+        serviceProxy.listarUsuariosActivos(
+                usuarios -> {
+                    javafx.collections.ObservableList<String> nombres =
+                            javafx.collections.FXCollections.observableArrayList();
 
-                    if ("OK".equals(partes[0])) {
-                        ObservableList<String> usuarios = FXCollections.observableArrayList();
-
-                        for (int i = 1; i < partes.length; i++) {
-                            String[] datos = partes[i].split(",");
-                            if (datos.length >= 3) {
-                                String nombre = datos[1];
-                                String rol = datos[2];
-                                usuarios.add(nombre + " (" + rol + ")");
-                            }
-                        }
-
-                        if (lstUsuariosActivos != null) {
-                            lstUsuariosActivos.setItems(usuarios);
-                        }
-
-                        if (lblUsuariosConectados != null) {
-                            lblUsuariosConectados.setText(usuarios.size() + " usuarios conectados");
-                        }
+                    for (ServiceProxy.UsuarioActivo usuario : usuarios) {
+                        nombres.add(usuario.getNombre() + " (" + usuario.getRol() + ")");
                     }
 
-                } catch (Exception e) {
-                    System.err.println("Error actualizando usuarios: " + e.getMessage());
+                    if (lstUsuariosActivos != null) {
+                        lstUsuariosActivos.setItems(nombres);
+                    }
+
+                    if (lblUsuariosConectados != null) {
+                        lblUsuariosConectados.setText(usuarios.size() + " usuarios conectados");
+                    }
+                },
+                error -> {
+                    // Error silencioso en dashboard
+                    System.err.println("Error actualizando usuarios: " + error);
                 }
-            });
-        });
+        );
     }
 
     private void mostrarNotificacion(String titulo, String mensaje) {
@@ -575,10 +583,10 @@ public class DashboardController {
         }
     }
     @FXML
-    public void logout(){
-        if (client != null && client.isConectado()) {
-            client.logout(respuesta -> {
-                System.out.println("Logout del servidor: " + respuesta);
+    public void logout() {
+        if (serviceProxy.isConectado()) {
+            serviceProxy.logout(exito -> {
+                System.out.println("Logout del servidor: " + (exito ? "OK" : "Error"));
             });
         }
 
@@ -593,10 +601,11 @@ public class DashboardController {
             stage.setScene(scene);
             stage.setTitle("Login - Sistema Hospital");
             stage.show();
-        } catch (IOException e) {
-           Alerta.error("Error","Error al regresar al login");
+        } catch (Exception e) {
+            Alerta.error("Error", "Error al regresar al login");
         }
     }
+
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             Platform.runLater(() -> progressIndicator.setVisible(mostrar));

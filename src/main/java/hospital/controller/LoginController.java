@@ -193,13 +193,13 @@ public class LoginController {
             stage.setTitle("Sistema Hospital - Dashboard");
             stage.setScene(scene);
 
-            // Al cerrar el dashboard, desconectar del servidor
             stage.setOnCloseRequest(event -> {
-                if (client != null && client.isConectado()) {
-                    client.logout(resp -> {
-                        System.out.println("Logout: " + resp);
-                    });
-                    client.desconectar();
+                HospitalClient clientInstance = HospitalClient.getInstance();
+                if (clientInstance.isConectado()) {
+                    clientInstance.logout(resp ->
+                            System.out.println("Logout del dashboard: " + resp)
+                    );
+                    // NO desconectar aquí, solo hacer logout
                 }
             });
 

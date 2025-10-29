@@ -35,6 +35,8 @@ public class HospitalClient {
     private final int MAX_INTENTOS_RECONEXION = 3;
     private final long DELAY_RECONEXION_MS = 3000;
 
+    private final Map<String, Consumer<String>> callbacksPendientes = new ConcurrentHashMap<>();
+
     private HospitalClient() {
         // Constructor privado para Singleton
     }
@@ -213,18 +215,33 @@ public class HospitalClient {
             return;
         }
 
-        if ("OK".equals(tipo) || "ERROR".equals(tipo)) {
-            if (onMensajeRecibido != null) {
-                Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
+        if (callbacksPendientes.containsKey("LOGIN")) {
+            if ("OK".equals(tipo) || "ERROR".equals(tipo)) {
+                Consumer<String> callback = callbacksPendientes.remove("LOGIN");
+                if (callback != null) {
+                    final String msg = mensaje;
+                    Platform.runLater(() -> callback.accept(msg));
+                }
+                return;
             }
-            return;
         }
 
+        for (String comando : callbacksPendientes.keySet()) {
+            if (mensaje.startsWith("OK") || mensaje.startsWith("ERROR")) {
+                Consumer<String> callback = callbacksPendientes.remove(comando);
+                if (callback != null) {
+                    final String msg = mensaje;
+                    Platform.runLater(() -> callback.accept(msg));
+                    return;
+                }
+            }
+        }
         if ("NOTIFICACION".equals(tipo) || "MENSAJE".equals(tipo)) {
             if (onMensajeRecibido != null) {
                 Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
             }
         } else {
+            // Otros mensajes generales
             if (onMensajeRecibido != null) {
                 Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
             }
@@ -254,30 +271,25 @@ public class HospitalClient {
             return;
         }
 
+        // Registrar el callback con el tipo de comando
+        String tipoComando = comando.split("\\|")[0];
+        if (callback != null) {
+            callbacksPendientes.put(tipoComando, callback);
+        }
+
         new Thread(() -> {
             try {
                 System.out.println("→ Enviando: " + comando);
                 out.println(comando);
 
                 if (out.checkError()) {
+                    callbacksPendientes.remove(tipoComando);
                     throw new IOException("Error al enviar comando");
-                }
-
-                String respuesta = in.readLine();
-
-                if (respuesta == null) {
-                    throw new IOException("Servidor cerró la conexión");
-                }
-
-                System.out.println("← Respuesta: " + respuesta);
-
-                if (callback != null) {
-                    final String resp = respuesta;
-                    Platform.runLater(() -> callback.accept(resp));
                 }
 
             } catch (IOException e) {
                 System.err.println("✗ Error enviando comando: " + e.getMessage());
+                callbacksPendientes.remove(tipoComando);
                 manejarDesconexion();
 
                 if (callback != null) {
@@ -331,43 +343,8 @@ public class HospitalClient {
     }
 
     public void login(String usuario, String clave, Consumer<String> callback) {
-        if (!conectado.get()) {
-            if (callback != null) {
-                Platform.runLater(() -> callback.accept("ERROR|No hay conexión con el servidor"));
-            }
-            return;
-        }
-
-        new Thread(() -> {
-            try {
-                String comando = "LOGIN|" + usuario + "|" + clave;
-                System.out.println("→ Enviando: " + comando);
-                out.println(comando);
-
-                if (out.checkError()) {
-                    throw new IOException("Error al enviar comando");
-                }
-
-                // Esperar un momento para la respuesta
-                String respuesta = null;
-                int intentos = 0;
-                while (intentos < 50 && respuesta == null) { // 5 segundos máximo
-                    Thread.sleep(100);
-                    // La respuesta llegará por el listener, no bloqueamos aquí
-                    intentos++;
-                }
-
-                // En lugar de leer aquí, procesaremos en el listener
-
-            } catch (Exception e) {
-                System.err.println("✗ Error en login: " + e.getMessage());
-                if (callback != null) {
-                    Platform.runLater(() ->
-                            callback.accept("ERROR|Error de comunicación: " + e.getMessage())
-                    );
-                }
-            }
-        }).start();
+        String comando = "LOGIN|" + usuario + "|" + clave;
+        enviarComando(comando, callback);
     }
 
     public void logout(Consumer<String> callback) {

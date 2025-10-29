@@ -114,15 +114,24 @@ public class LoginController {
                         deshabilitarControles(false);
 
                         String mensaje = partes.length > 1 ? partes[1] : "Error desconocido";
-                        mostrarError(mensaje);
+                        if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
+                            mostrarError("Usuario o contraseña incorrectos.");
+                        } else {
+                            mostrarError("Error de autenticación: " + mensaje);
+                        }
 
                         limpiarCampos();
+                        txtUsuario.requestFocus();
                     }
 
                 } catch (Exception e) {
                     mostrarCargando(false);
                     deshabilitarControles(false);
                     mostrarError("Error procesando respuesta: " + e.getMessage());
+
+                    limpiarCampos();
+                    txtUsuario.requestFocus();
+
                 }
             });
         });

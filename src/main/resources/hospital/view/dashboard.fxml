@@ -9,7 +9,6 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<?import javafx.scene.control.Tooltip?>
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="582.0" prefWidth="975.0" style="-fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hospital.controller.DashboardController">
    <children>
       <Pane prefHeight="582.0" prefWidth="302.0" style="-fx-background-color: #16254c;">
@@ -107,18 +106,12 @@
             </ImageView>
          </graphic>
       </Button>
-      <!-- NUEVO BOTÓN PARA ABRIR CHAT -->
-      <Button fx:id="btnAbrirChat"
-              text="💬 Abrir Mensajería"
-              onAction="#abrirChat"
-              maxWidth="Infinity"
-              styleClass="btn-primary"
-              style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 15;">
-         <tooltip>
-            <Tooltip text="Abrir ventana de chat para comunicarte con otros usuarios"/>
-         </tooltip>
-      </Button>
       <Pane fx:id="paneLineChart" cache="true" cacheHint="QUALITY" layoutX="347.0" layoutY="113.0" prefHeight="200.0" prefWidth="200.0" />
       <Pane fx:id="panePieChart" layoutX="587.0" layoutY="341.0" prefHeight="200.0" prefWidth="200.0" />
+      <Button id="btnAbrirChat" fx:id="btnAbrirChat" layoutX="334.0" layoutY="26.0" mnemonicParsing="false" onAction="#abrirChat" style="-fx-background-color: transparent; -fx-cursor: hand;" text="💬 Chat" textFill="#16254c">
+         <font>
+            <Font name="System Bold" size="32.0" />
+         </font>
+      </Button>
    </children>
 </AnchorPane>

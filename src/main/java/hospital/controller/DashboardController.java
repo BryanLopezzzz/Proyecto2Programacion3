@@ -240,7 +240,13 @@ public class DashboardController {
     @FXML
     public void abrirChat() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/hospital/view/chat.fxml"));
+            if (!serviceProxy.isConectado()) {
+                Alerta.error("Error", "No hay conexión con el servidor.\n" +
+                        "La función de mensajería requiere conexión al servidor.");
+                return;
+            }
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(getClass().getResource("/hospital/view/chat.fxml"));
             Parent root = loader.load();
 
             Stage stage = new Stage();
@@ -248,11 +254,21 @@ public class DashboardController {
             stage.setScene(new Scene(root));
             stage.initModality(Modality.NONE);
             stage.initOwner(btnAbrirChat.getScene().getWindow());
+            stage.setOnCloseRequest(event -> {
+                System.out.println("Ventana de chat cerrada");
+            });
+
             stage.show();
 
         } catch (IOException e) {
             e.printStackTrace();
-            Alerta.error("Error", "No se pudo abrir la ventana de chat: " + e.getMessage());
+            System.err.println("Error cargando chat.fxml: " + e.getMessage());
+            Alerta.error("Error", "No se pudo abrir la ventana de chat.\n" +
+                    "Verifique que el archivo chat.fxml existe en /hospital/view/\n" +
+                    "Error: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alerta.error("Error", "Error inesperado al abrir chat: " + e.getMessage());
         }
     }
 

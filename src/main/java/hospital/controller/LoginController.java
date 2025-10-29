@@ -189,24 +189,31 @@ public class LoginController {
             DashboardController dashboardController = loader.getController();
             dashboardController.setLoginController(loginLogica);
 
-            Stage stage = new Stage();
-            stage.setTitle("Sistema Hospital - Dashboard");
-            stage.setScene(scene);
+            Stage dashboardStage = new Stage();
+            dashboardStage.setTitle("Sistema Hospital - Dashboard");
+            dashboardStage.setScene(scene);
 
-            stage.setOnCloseRequest(event -> {
+            dashboardStage.setOnCloseRequest(event -> {
                 HospitalClient clientInstance = HospitalClient.getInstance();
                 if (clientInstance.isConectado()) {
                     clientInstance.logout(resp ->
-                            System.out.println("Logout del dashboard: " + resp)
+                            System.out.println("Logout: " + resp)
                     );
-                    // NO desconectar aquí, solo hacer logout
+                    clientInstance.desconectar();
                 }
+
+                // Cerrar la aplicación completamente
+                Platform.exit();
+                System.exit(0);
             });
 
-            stage.show();
+            dashboardStage.show();
 
-            Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
-            loginStage.close();
+            // ✅ Cerrar login DESPUÉS de mostrar dashboard
+            Platform.runLater(() -> {
+                Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
+                loginStage.close();
+            });
 
         } catch (Exception e) {
             mostrarCargando(false);

@@ -95,8 +95,7 @@
                 <Button fx:id="btnActualizar"
                         text="🔄"
                         onAction="#actualizarLista"
-                        styleClass="btn-icon"
-                        tooltip="Actualizar lista">
+                        styleClass="btn-icon">
                     <tooltip>
                         <Tooltip text="Actualizar lista de usuarios"/>
                     </tooltip>

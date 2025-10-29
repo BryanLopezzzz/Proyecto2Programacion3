@@ -15,6 +15,8 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import hospital.servicios.HospitalClient;
 
+import java.util.function.Consumer;
+
 public class LoginController {
     @FXML
     private TextField txtUsuario;
@@ -95,6 +97,8 @@ public class LoginController {
     }
 
     private void loginRemoto(String id, String clave) {
+        Consumer<String> listenerOriginal = null;
+
         clientGlobal.login(id, clave, respuesta -> {
             Platform.runLater(() -> {
                 try {
@@ -104,37 +108,29 @@ public class LoginController {
                         String nombre = partes[1];
                         String rol = partes[2];
 
-                        // Crear usuario según el rol
                         Usuario usuario = crearUsuarioPorRol(id, nombre, rol);
                         Sesion.setUsuario(usuario);
-
-                        // Cargar dashboard
                         cargarDashboard();
 
                     } else {
+                        mostrarCargando(false);
+                        deshabilitarControles(false);
+
                         String mensaje = partes.length > 1 ? partes[1] : "Error desconocido";
+                        if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
+                            mostrarError("Usuario o contraseña incorrectos.");
+                        } else {
+                            mostrarError("Error de autenticación: " + mensaje);
+                        }
 
-                        Platform.runLater(() -> {
-                            mostrarCargando(false);
-                            deshabilitarControles(false);
-
-                            if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
-                                mostrarError("Usuario o contraseña incorrectos.");
-                            } else {
-                                mostrarError("Error de autenticación: " + mensaje);
-                            }
-
-                            limpiarCampos();
-                        });
+                        limpiarCampos();
                     }
+
                 } catch (Exception e) {
                     mostrarCargando(false);
                     deshabilitarControles(false);
                     mostrarError("Error procesando respuesta: " + e.getMessage());
-
                     limpiarCampos();
-                    txtUsuario.requestFocus();
-
                 }
             });
         });

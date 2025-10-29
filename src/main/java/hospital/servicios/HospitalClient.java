@@ -213,6 +213,13 @@ public class HospitalClient {
             return;
         }
 
+        if ("OK".equals(tipo) || "ERROR".equals(tipo)) {
+            if (onMensajeRecibido != null) {
+                Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
+            }
+            return;
+        }
+
         if ("NOTIFICACION".equals(tipo) || "MENSAJE".equals(tipo)) {
             if (onMensajeRecibido != null) {
                 Platform.runLater(() -> onMensajeRecibido.accept(mensaje));
@@ -324,8 +331,43 @@ public class HospitalClient {
     }
 
     public void login(String usuario, String clave, Consumer<String> callback) {
-        String comando = "LOGIN|" + usuario + "|" + clave;
-        enviarComando(comando, callback);
+        if (!conectado.get()) {
+            if (callback != null) {
+                Platform.runLater(() -> callback.accept("ERROR|No hay conexión con el servidor"));
+            }
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                String comando = "LOGIN|" + usuario + "|" + clave;
+                System.out.println("→ Enviando: " + comando);
+                out.println(comando);
+
+                if (out.checkError()) {
+                    throw new IOException("Error al enviar comando");
+                }
+
+                // Esperar un momento para la respuesta
+                String respuesta = null;
+                int intentos = 0;
+                while (intentos < 50 && respuesta == null) { // 5 segundos máximo
+                    Thread.sleep(100);
+                    // La respuesta llegará por el listener, no bloqueamos aquí
+                    intentos++;
+                }
+
+                // En lugar de leer aquí, procesaremos en el listener
+
+            } catch (Exception e) {
+                System.err.println("✗ Error en login: " + e.getMessage());
+                if (callback != null) {
+                    Platform.runLater(() ->
+                            callback.accept("ERROR|Error de comunicación: " + e.getMessage())
+                    );
+                }
+            }
+        }).start();
     }
 
     public void logout(Consumer<String> callback) {

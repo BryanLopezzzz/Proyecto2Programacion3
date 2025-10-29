@@ -71,7 +71,7 @@ public class LoginController {
         } catch (Exception e) {
             System.err.println("Error conectando al servidor: " + e.getMessage());
             clientGlobal = null;
-            Platform.runLater(() -> { // ✅ CAMBIAR: Usar Platform.runLater
+            Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.setTitle("Advertencia");
                 alert.setHeaderText("No se pudo conectar al servidor");
@@ -112,20 +112,21 @@ public class LoginController {
                         cargarDashboard();
 
                     } else {
-                        mostrarCargando(false);
-                        deshabilitarControles(false);
-
                         String mensaje = partes.length > 1 ? partes[1] : "Error desconocido";
-                        if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
-                            mostrarError("Usuario o contraseña incorrectos.");
-                        } else {
-                            mostrarError("Error de autenticación: " + mensaje);
-                        }
 
-                        limpiarCampos();
-                        txtUsuario.requestFocus();
+                        Platform.runLater(() -> {
+                            mostrarCargando(false);
+                            deshabilitarControles(false);
+
+                            if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
+                                mostrarError("Usuario o contraseña incorrectos.");
+                            } else {
+                                mostrarError("Error de autenticación: " + mensaje);
+                            }
+
+                            limpiarCampos();
+                        });
                     }
-
                 } catch (Exception e) {
                     mostrarCargando(false);
                     deshabilitarControles(false);
@@ -155,17 +156,19 @@ public class LoginController {
                 },
                 // OnError
                 error -> {
-                    mostrarCargando(false);
-                    deshabilitarControles(false);
+                    Platform.runLater(() -> {
+                        mostrarCargando(false);
+                        deshabilitarControles(false);
 
-                    String mensaje = error.getMessage();
-                    if (mensaje.contains("Credenciales incorrectas")) {
-                        mostrarError("Usuario o contraseña incorrectos.");
-                    } else {
-                        mostrarError("Error al iniciar sesión: " + mensaje);
-                    }
+                        String mensaje = error.getMessage();
+                        if (mensaje.contains("Credenciales incorrectas")) {
+                            mostrarError("Usuario o contraseña incorrectos.");
+                        } else {
+                            mostrarError("Error al iniciar sesión: " + mensaje);
+                        }
 
-                    limpiarCampos();
+                        limpiarCampos();
+                    });
                 }
         );
     }
@@ -280,8 +283,14 @@ public class LoginController {
     }
 
     private void limpiarCampos() {
-        txtClave.clear();
-        txtClaveVisible.clear();
-        txtClave.requestFocus();
+        Platform.runLater(() -> {
+            txtClave.clear();
+            txtClaveVisible.clear();
+            if (txtClave.isVisible()) {
+                txtClave.requestFocus();
+            } else {
+                txtClaveVisible.requestFocus();
+            }
+        });
     }
 }

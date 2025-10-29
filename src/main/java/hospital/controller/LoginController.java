@@ -31,6 +31,7 @@ public class LoginController {
     @FXML //Es lo nuevo de hilos
     private ProgressIndicator progressIndicator;
 
+    private static HospitalClient clientGlobal;
     private HospitalClient client;
     private final LoginLogica loginLogica = new LoginLogica();
     private boolean claveVisible = false;
@@ -55,13 +56,15 @@ public class LoginController {
 
     private void conectarAlServidor() {
         try {
-            client = HospitalClient.getInstance();
+            if (clientGlobal == null) {
+                clientGlobal = HospitalClient.getInstance();
+            }
 
             String host = "localhost";
             int port = 5000;
 
-            if (!client.isConectado()) {
-                client.conectar(host, port);
+            if (!clientGlobal.isConectado()) {
+                clientGlobal.conectar(host, port);
                 System.out.println("Conectado al servidor: " + host + ":" + port);
             }
 
@@ -82,7 +85,7 @@ public class LoginController {
         deshabilitarControles(true);
         mostrarCargando(true);
 
-        if (client != null && client.isConectado()) {
+        if (clientGlobal != null && clientGlobal.isConectado()) {
             loginRemoto(id, clave);
         } else {
             loginLocal(id, clave);
@@ -90,7 +93,7 @@ public class LoginController {
     }
 
     private void loginRemoto(String id, String clave) {
-        client.login(id, clave, respuesta -> {
+        clientGlobal.login(id, clave, respuesta -> {
             Platform.runLater(() -> {
                 try {
                     String[] partes = respuesta.split("\\|");
@@ -194,22 +197,19 @@ public class LoginController {
             dashboardStage.setScene(scene);
 
             dashboardStage.setOnCloseRequest(event -> {
-                HospitalClient clientInstance = HospitalClient.getInstance();
-                if (clientInstance.isConectado()) {
-                    clientInstance.logout(resp ->
+                if (clientGlobal != null && clientGlobal.isConectado()) {
+                    clientGlobal.logout(resp ->
                             System.out.println("Logout: " + resp)
                     );
-                    clientInstance.desconectar();
+                    clientGlobal.desconectar();
+                    clientGlobal = null;
                 }
-
-                // Cerrar la aplicación completamente
                 Platform.exit();
                 System.exit(0);
             });
 
             dashboardStage.show();
 
-            // ✅ Cerrar login DESPUÉS de mostrar dashboard
             Platform.runLater(() -> {
                 Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
                 loginStage.close();

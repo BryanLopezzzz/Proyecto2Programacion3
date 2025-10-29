@@ -50,7 +50,7 @@ public class LoginController {
             Alerta.error("Error","El clave es obligatorio.");
             return;
         }
-        conectarAlServidor();
+        verificarYReconectar();
         loginAsync(id, clave);
     }
 
@@ -70,14 +70,16 @@ public class LoginController {
 
         } catch (Exception e) {
             System.err.println("Error conectando al servidor: " + e.getMessage());
-
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Advertencia");
-            alert.setHeaderText("No se pudo conectar al servidor");
-            alert.setContentText("El sistema funcionará en modo local.\n" +
-                    "Funcionalidades de chat y notificaciones no estarán disponibles.\n\n" +
-                    "Error: " + e.getMessage());
-            alert.show();
+            clientGlobal = null;
+            Platform.runLater(() -> { // ✅ CAMBIAR: Usar Platform.runLater
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Advertencia");
+                alert.setHeaderText("No se pudo conectar al servidor");
+                alert.setContentText("El sistema funcionará en modo local.\n" +
+                        "Funcionalidades de chat y notificaciones no estarán disponibles.\n\n" +
+                        "Error: " + e.getMessage());
+                alert.show();
+            });
         }
     }
 
@@ -228,6 +230,13 @@ public class LoginController {
             mostrarCargando(false);
             deshabilitarControles(false);
             mostrarError("Error al cargar el dashboard: " + e.getMessage());
+        }
+    }
+
+    private void verificarYReconectar() {
+        if (clientGlobal == null || !clientGlobal.isConectado()) {
+            System.out.println("Reconectando al servidor...");
+            conectarAlServidor();
         }
     }
 

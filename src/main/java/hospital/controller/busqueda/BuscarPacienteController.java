@@ -1,5 +1,6 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.controller.EditarPacienteController;
 import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
@@ -72,7 +73,6 @@ public class BuscarPacienteController {
 
     @FXML
     public void initialize() {
-        // Configurar columnas
         colIdentificacionPaciente.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getId()));
         colNombrePaciente.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getNombre()));
         colTelefonoPaciente.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getTelefono()));
@@ -80,7 +80,6 @@ public class BuscarPacienteController {
                 cellData.getValue().getFechaNacimiento().format(formatter)
         ));
 
-        // Inicializar filtro
         btnFiltro.setItems(FXCollections.observableArrayList("Nombre", "ID"));
         btnFiltro.setValue("Nombre");
 
@@ -110,7 +109,7 @@ public class BuscarPacienteController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al cargar pacientes: " + error.getMessage());
+                    Alerta.error("Error","Error al cargar pacientes: " + error.getMessage());
                 }
         );
     }
@@ -123,7 +122,6 @@ public class BuscarPacienteController {
     @FXML
     public void AgregarPaciente(ActionEvent event) {
         try {
-            // Usar la ventana de editar pero sin cargar datos
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/agregarPaciente.fxml"));
             Parent root = fxmlLoader.load();
 
@@ -134,7 +132,7 @@ public class BuscarPacienteController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de agregar paciente: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de agregar paciente: " + e.getMessage());
         }
     }
 
@@ -142,7 +140,7 @@ public class BuscarPacienteController {
     public void EliminarPaciente(ActionEvent event) {
         Paciente seleccionado = tblPacientes.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un paciente para eliminar.");
+            Alerta.error("Error","Debe seleccionar un paciente para eliminar.");
             return;
         }
 
@@ -174,13 +172,13 @@ public class BuscarPacienteController {
                     tblPacientes.refresh();
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Paciente eliminado correctamente.");
+                    Alerta.info("Información","Paciente eliminado correctamente.");
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al eliminar: " + error.getMessage());
+                    Alerta.error("Error","Error al eliminar: " + error.getMessage());
                 }
         );
     }
@@ -188,7 +186,7 @@ public class BuscarPacienteController {
     public void EditarPaciente(ActionEvent event) {
         Paciente seleccionado = tblPacientes.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un paciente para editar.");
+            Alerta.error("Error","Debe seleccionar un paciente para editar.");
             return;
         }
 
@@ -209,7 +207,7 @@ public class BuscarPacienteController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de edición: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de edición: " + e.getMessage());
         }
     }
 
@@ -235,13 +233,13 @@ public class BuscarPacienteController {
                     tblPacientes.getItems().setAll(reporte);
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Reporte generado correctamente desde la base de datos.");
+                    Alerta.info("Información","Reporte generado correctamente desde la base de datos.");
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al generar reporte: " + error.getMessage());
+                    Alerta.error("Error","Error al generar reporte: " + error.getMessage());
                 }
         );
     }
@@ -270,7 +268,7 @@ public class BuscarPacienteController {
                         List<Paciente> resultados;
                         if ("Nombre".equals(filtro)) {
                             resultados = pacienteIntermediaria.buscarPorNombre(admin, criterio);
-                        } else { // ID
+                        } else {
                             Paciente p = pacienteIntermediaria.buscarPorId(criterio);
                             resultados = (p != null) ? List.of(p) : List.of();
                         }
@@ -287,14 +285,14 @@ public class BuscarPacienteController {
                     deshabilitarControles(false);
 
                     if (resultados.isEmpty()) {
-                        mostrarInfo("No se encontraron pacientes con el criterio especificado.");
+                        Alerta.info("Información","No se encontraron pacientes con el criterio especificado.");
                     }
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error en búsqueda: " + error.getMessage());
+                    Alerta.error("Error","Error en búsqueda: " + error.getMessage());
                 }
         );
     }
@@ -310,20 +308,10 @@ public class BuscarPacienteController {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al cargar el dashboard.");
+            Alerta.error("Error","Error al cargar el dashboard.");
         }
     }
 
-    // Utilitarios
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, mensaje);
-        alert.showAndWait();
-    }
 
     private void deshabilitarControles(boolean deshabilitar) {
         btnAgregarPaciente.setDisable(deshabilitar);

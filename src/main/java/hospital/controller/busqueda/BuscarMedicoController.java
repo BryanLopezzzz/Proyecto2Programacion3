@@ -1,5 +1,6 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.logica.MedicoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medico;
@@ -65,7 +66,6 @@ public class BuscarMedicoController {
 
     @FXML
     public void initialize() {
-        // Configurar columnas
         colIdentificacion.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().getId()));
         colNombre.setCellValueFactory(cellData ->
@@ -73,7 +73,6 @@ public class BuscarMedicoController {
         colEspecialidad.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().getEspecialidad()));
 
-        // Inicializar filtro
         cmbFiltrar.setItems(FXCollections.observableArrayList("Nombre", "ID"));
         cmbFiltrar.setValue("Nombre");
 
@@ -101,7 +100,7 @@ public class BuscarMedicoController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al cargar médicos: " + error.getMessage());
+                    Alerta.error("Error","Error al cargar médicos: " + error.getMessage());
                 }
         );
     }
@@ -109,7 +108,6 @@ public class BuscarMedicoController {
     @FXML
     public void AgregarMedico(ActionEvent event) {
         try {
-            // Usar la ventana de agregar médico
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/agregarMedico.fxml"));
             Parent root = fxmlLoader.load();
 
@@ -120,7 +118,7 @@ public class BuscarMedicoController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de agregar médico: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de agregar médico: " + e.getMessage());
         }
     }
 
@@ -128,7 +126,7 @@ public class BuscarMedicoController {
     public void EliminarMedico(ActionEvent event) {
         Medico seleccionado = tblMedicos.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un médico para eliminar.");
+            Alerta.error("Error","Debe seleccionar un médico para eliminar.");
             return;
         }
 
@@ -162,12 +160,12 @@ public class BuscarMedicoController {
                     tblMedicos.refresh();
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Médico eliminado correctamente.");
+                    Alerta.info("Información","Médico eliminado correctamente.");
                 },
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al eliminar médico: " + error.getMessage());
+                    Alerta.error("Error","Error al eliminar médico: " + error.getMessage());
                 }
         );
     }
@@ -176,19 +174,16 @@ public class BuscarMedicoController {
     public void EditarMedico(ActionEvent event) {
         Medico seleccionado = tblMedicos.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un médico para editar.");
+            Alerta.error("Error","Debe seleccionar un médico para editar.");
             return;
         }
 
         try {
-            // Cargar la ventana de editar médico
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/hospital/view/editarMedico.fxml"));
             Parent root = fxmlLoader.load();
 
-            // Obtener el controlador de la ventana de edición
             EditarMedicoController editarController = fxmlLoader.getController();
 
-            // Pasar los datos del médico seleccionado al controlador de edición
             editarController.inicializarConMedico(seleccionado);
 
             Stage stage = (Stage) btnEditarMedico.getScene().getWindow();
@@ -198,7 +193,7 @@ public class BuscarMedicoController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al abrir la ventana de editar médico: " + e.getMessage());
+            Alerta.error("Error","Error al abrir la ventana de editar médico: " + e.getMessage());
         }
     }
 
@@ -223,12 +218,12 @@ public class BuscarMedicoController {
                     tblMedicos.getItems().setAll(reporte);
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Reporte generado correctamente desde la base de datos.");
+                    Alerta.info("Información","Reporte generado correctamente desde la base de datos.");
                 },
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al generar reporte: " + error.getMessage());
+                    Alerta.error("Error","Error al generar reporte: " + error.getMessage());
                 }
         );
     }
@@ -273,14 +268,14 @@ public class BuscarMedicoController {
                     deshabilitarControles(false);
 
                     if (resultados.isEmpty()) {
-                        mostrarInfo("No se encontraron médicos con el criterio especificado.");
+                        Alerta.info("Información","No se encontraron médicos con el criterio especificado.");
                     }
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error en búsqueda: " + error.getMessage());
+                    Alerta.error("Error","Error en búsqueda: " + error.getMessage());
                 }
         );
     }
@@ -296,30 +291,12 @@ public class BuscarMedicoController {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al cargar el dashboard.");
+            Alerta.error("Error","Error al cargar el dashboard.");
         }
     }
 
-    // Método para filtrar (llamado por el ComboBox)
     public void filtrar(ActionEvent event) {
         Buscar(event);
-    }
-
-    // Métodos utilitarios
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
     }
 
     private void deshabilitarControles(boolean deshabilitar) {

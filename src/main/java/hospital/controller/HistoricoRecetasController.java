@@ -116,7 +116,7 @@ public class HistoricoRecetasController {
                 public void run() {
                     Platform.runLater(() -> Buscar());
                 }
-            }, 300); // Buscar después de 300ms de no escribir
+            }, 300);
         });
     }
 

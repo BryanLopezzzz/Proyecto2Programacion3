@@ -1,5 +1,6 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
@@ -95,7 +96,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
                 },
                 // OnError
                 error -> {
-                    mostrarError("Error al cargar medicamentos: " + error.getMessage());
+                    Alerta.error("Error","Error al cargar medicamentos: " + error.getMessage());
                 }
         );
     }
@@ -132,11 +133,9 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
         String filtro = btnFiltro.getValue();
         String criterio = textoBusqueda.trim();
 
-        // Si es búsqueda por código o nombre, usar Async para consulta a BD
         if ("Código".equals(filtro) || "Nombre".equals(filtro)) {
             buscarEnBaseDatosAsync(filtro, criterio);
         } else {
-            // Para búsquedas locales (en memoria), ejecutar directamente
             buscarLocal(filtro, criterio);
         }
     }
@@ -167,12 +166,12 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
                     medicamentos.addAll(resultados);
 
                     if (resultados.isEmpty()) {
-                        System.out.println("No se encontraron resultados para: " + criterio);
+                        Alerta.advertencia("Advertencia","No se encontraron resultados para: " + criterio);
                     }
                 },
                 // OnError
                 error -> {
-                    mostrarError("Error al buscar medicamentos: " + error.getMessage());
+                    Alerta.error("Error","Error al buscar medicamentos: " + error.getMessage());
                 }
         );
     }
@@ -208,7 +207,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
         medicamentos.addAll(resultados);
 
         if (resultados.isEmpty()) {
-            System.out.println("No se encontraron resultados para: " + criterio);
+            Alerta.advertencia("Advertencia","No se encontraron resultados para: " + criterio);
         }
     }
 
@@ -216,7 +215,7 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
     private void Seleccionar() {
         medicamentoSeleccionado = tblMedicamento.getSelectionModel().getSelectedItem();
         if (medicamentoSeleccionado == null) {
-            mostrarError("Debe seleccionar un medicamento.");
+            Alerta.error("Error","Debe seleccionar un medicamento.");
             return;
         }
         Stage stage = (Stage) tblMedicamento.getScene().getWindow();
@@ -229,13 +228,6 @@ public class BuscarMedicamentoPreescripcionController implements Initializable {
         stage.close();
     }
 
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
 
     public Medicamento getMedicamentoSeleccionado() {
         return medicamentoSeleccionado;

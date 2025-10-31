@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.Alerta;
 import hospital.controller.busqueda.Async;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
@@ -60,18 +61,17 @@ public class RegistroMedicamentoController implements Initializable {
         String presentacion = txtPresentacion.getText();
 
         if (codigo == null || codigo.trim().isEmpty()) {
-            mostrarError("El código es obligatorio.");
+            Alerta.error("Error","El código es obligatorio.");
             return;
         }
         if (nombre == null || nombre.trim().isEmpty()) {
-            mostrarError("El nombre es obligatorio.");
+            Alerta.error("Error","El nombre es obligatorio.");
             return;
         }
         if (presentacion == null || presentacion.trim().isEmpty()) {
-            mostrarError("La presentación es obligatoria.");
+            Alerta.error("Error","La presentación es obligatoria.");
             return;
         }
-        //Lo nuevo de hilos, se elimino el try y catch que había
         guardarAsync(codigo.trim(), nombre.trim(), presentacion.trim());
     }
 
@@ -86,10 +86,9 @@ public class RegistroMedicamentoController implements Initializable {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda.");
+            Alerta.error("Error","Error al volver a la vista de búsqueda.");
         }
     }
-// Metodo de hilos que creo el profe en clases, similar al usado en la carpeta "busqueda"
     private void guardarAsync(String codigo, String nombre, String presentacion) {
         deshabilitarControles(true);
         mostrarCargando(true);
@@ -110,7 +109,7 @@ public class RegistroMedicamentoController implements Initializable {
                     mostrarCargando(false);
                     deshabilitarControles(false);
 
-                    mostrarInfo("Medicamento guardado exitosamente.\n" +
+                    Alerta.info("Información","Medicamento guardado exitosamente.\n" +
                             "Medicamento: " + medicamento.getNombre() + "\n" +
                             "Codigo: " + medicamento.getCodigo() + "\n" +
                             "Presentacion: " + medicamento.getPresentacion());
@@ -123,24 +122,9 @@ public class RegistroMedicamentoController implements Initializable {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al agregar medicamento: " + error.getMessage());
+                    Alerta.error("Error","Error al agregar medicamento: " + error.getMessage());
                 }
         );
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Registro Exitoso");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
     }
 
     private void limpiarCampos() {

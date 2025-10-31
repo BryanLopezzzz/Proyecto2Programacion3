@@ -63,11 +63,9 @@ public class EditarDetalleRecetaController {
         deshabilitarControles(true);
         mostrarCargando(true);
 
-        // Capturar ID de receta antes del hilo
         final String recetaId = receta.getId();
 
         Async.Run(
-                // Tarea en segundo plano
                 () -> {
                     try {
                         recetaIntermediaria.actualizarEstado(farmaceuta, recetaId, nuevoEstado);

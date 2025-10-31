@@ -1,5 +1,6 @@
 package hospital.controller.busqueda;
 
+import hospital.controller.Alerta;
 import hospital.logica.MedicamentoLogica;
 import hospital.model.Administrador;
 import hospital.model.Medicamento;
@@ -91,7 +92,7 @@ public class BuscarMedicamentoController implements Initializable {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al cargar medicamentos: " + error.getMessage());
+                    Alerta.error("Error","Error al cargar medicamentos: " + error.getMessage());
                 }
         );
     }
@@ -136,13 +137,13 @@ public class BuscarMedicamentoController implements Initializable {
                     deshabilitarControles(false);
 
                     if (resultados.isEmpty()) {
-                        mostrarInfo("No se encontraron medicamentos con el criterio especificado.");
+                        Alerta.info("Infromación","No se encontraron medicamentos con el criterio especificado.");
                     }
                 },
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al buscar medicamentos: " + error.getMessage());
+                    Alerta.error("Error","Error al buscar medicamentos: " + error.getMessage());
                 }
         );
     }
@@ -159,14 +160,14 @@ public class BuscarMedicamentoController implements Initializable {
             stage.show();
 
         } catch (Exception e) {
-            mostrarError("Error al abrir ventana agregar medicamento: " + e.getMessage());
+            Alerta.error("Error","Error al abrir ventana agregar medicamento: " + e.getMessage());
         }
     }
     @FXML
     private void EliminarMedicamento() {
         Medicamento seleccionado = tblMedicos.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un medicamento para eliminar.");
+            Alerta.error("Error","Debe seleccionar un medicamento para eliminar.");
             return;
         }
 
@@ -198,12 +199,12 @@ public class BuscarMedicamentoController implements Initializable {
                     tblMedicos.refresh();
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Medicamento eliminado correctamente.");
+                    Alerta.info("Información","Medicamento eliminado correctamente.");
                 },
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al eliminar medicamento: " + error.getMessage());
+                    Alerta.error("Error","Error al eliminar medicamento: " + error.getMessage());
                 }
         );
     }
@@ -212,7 +213,7 @@ public class BuscarMedicamentoController implements Initializable {
     private void EditarMedicamento() {
         Medicamento seleccionado = tblMedicos.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
-            mostrarError("Debe seleccionar un medicamento para editar.");
+            Alerta.error("Error","Debe seleccionar un medicamento para editar.");
             return;
         }
 
@@ -229,7 +230,7 @@ public class BuscarMedicamentoController implements Initializable {
             stage.show();
 
         } catch (Exception e) {
-            mostrarError("Error al abrir ventana editar medicamento: " + e.getMessage());
+            Alerta.error("Error","Error al abrir ventana editar medicamento: " + e.getMessage());
         }
     }
     @FXML
@@ -270,30 +271,14 @@ public class BuscarMedicamentoController implements Initializable {
                     medicamentos.addAll(reporte);
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Reporte generado correctamente.");
+                    Alerta.info("Información","Reporte generado correctamente.");
                 },
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al generar reporte: " + error.getMessage());
+                    Alerta.error("Error","Error al generar reporte: " + error.getMessage());
                 }
         );
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
     }
 
     public Medicamento getMedicamentoSeleccionado() {
@@ -304,7 +289,7 @@ public class BuscarMedicamentoController implements Initializable {
     private void SeleccionarMedicamento() {
         medicamentoSeleccionado = tblMedicos.getSelectionModel().getSelectedItem();
         if (medicamentoSeleccionado == null) {
-            mostrarError("Debe seleccionar un medicamento.");
+            Alerta.error("Error","Debe seleccionar un medicamento.");
             return;
         }
         Stage stage = (Stage) tblMedicos.getScene().getWindow();

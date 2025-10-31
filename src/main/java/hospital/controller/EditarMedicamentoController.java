@@ -46,7 +46,6 @@ public class EditarMedicamentoController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // El código del medicamento no debería ser editable
         txtCodigo.setEditable(false);
         txtCodigo.setStyle("-fx-background-color: #f5f5f5; -fx-border-color: #b3b3b3; -fx-border-radius: 4;");
 
@@ -54,7 +53,6 @@ public class EditarMedicamentoController implements Initializable {
             progressIndicator.setVisible(false);
         }
 
-        // Enfocar el campo nombre por defecto
         txtNombre.requestFocus();
     }
 
@@ -73,14 +71,12 @@ public class EditarMedicamentoController implements Initializable {
             return;
         }
 
-        // Verificar si hubo cambios
         if (!hayCambios()) {
-            mostrarInformacion("No se detectaron cambios para guardar.");
+            Alerta.info("Información","No se detectaron cambios para guardar.");
             return;
         }
 
-        // Mostrar confirmación antes de guardar
-        mostrarConfirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicamentoAsync);
+        Alerta.confirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicamentoAsync);
     }
 
     private void guardarMedicamentoAsync() {
@@ -106,23 +102,22 @@ public class EditarMedicamentoController implements Initializable {
                 () -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInformacion("Medicamento actualizado correctamente.");
+                    Alerta.info("Información","Medicamento actualizado correctamente.");
                     Volver();
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al actualizar medicamento: " + error.getMessage());
+                    Alerta.error("Error","Error al actualizar medicamento: " + error.getMessage());
                 }
         );
     }
 
     @FXML
     private void Volver() {
-        // Verificar si hay cambios sin guardar
         if (hayCambios()) {
-            mostrarConfirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
+            Alerta.confirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
                     this::volverABusqueda);
         } else {
             volverABusqueda();
@@ -139,20 +134,18 @@ public class EditarMedicamentoController implements Initializable {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda: " + e.getMessage());
+            Alerta.error("Error","Error al volver a la vista de búsqueda: " + e.getMessage());
         }
     }
 
     private boolean validarCampos() {
         StringBuilder errores = new StringBuilder();
 
-        // Validar código (aunque no sea editable)
         String codigo = txtCodigo.getText().trim();
         if (codigo.isEmpty()) {
             errores.append("- El código no puede estar vacío.\n");
         }
 
-        // Validar nombre
         String nombre = txtNombre.getText().trim();
         if (nombre.isEmpty()) {
             errores.append("- El nombre es obligatorio.\n");
@@ -160,7 +153,6 @@ public class EditarMedicamentoController implements Initializable {
             errores.append("- El nombre debe tener al menos 2 caracteres.\n");
         }
 
-        // Validar presentación
         String presentacion = txtPresentacion.getText().trim();
         if (presentacion.isEmpty()) {
             errores.append("- La presentación es obligatoria.\n");
@@ -168,14 +160,12 @@ public class EditarMedicamentoController implements Initializable {
             errores.append("- La presentación debe tener al menos 2 caracteres.\n");
         }
 
-        // Validar que exista medicamento original
         if (medicamentoOriginal == null) {
             errores.append("- Error: No se ha establecido el medicamento a editar.\n");
         }
 
-        // Mostrar errores si existen
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -204,33 +194,6 @@ public class EditarMedicamentoController implements Initializable {
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
-        }
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInformacion(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarConfirmacion(String mensaje, Runnable accion) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            accion.run();
         }
     }
 

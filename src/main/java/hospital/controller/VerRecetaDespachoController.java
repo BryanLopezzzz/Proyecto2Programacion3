@@ -63,7 +63,6 @@ public class VerRecetaDespachoController {
             return;
         }
 
-        // Datos del paciente
         if (receta.getPaciente() != null) {
             lblPacienteId.setText(receta.getPaciente().getId() != null ?
                     receta.getPaciente().getId() : "-");
@@ -80,7 +79,6 @@ public class VerRecetaDespachoController {
             lblPacienteTelefono.setText("-");
         }
 
-        // Datos del médico
         if (receta.getMedico() != null) {
             lblMedicoId.setText(receta.getMedico().getId() != null ?
                     receta.getMedico().getId() : "-");
@@ -94,7 +92,6 @@ public class VerRecetaDespachoController {
             lblMedicoEspecialidad.setText("-");
         }
 
-        // Datos del medicamento y detalle
         if (receta.getDetalles() != null && !receta.getDetalles().isEmpty()) {
             lblMedicamentoNombre.setText(receta.getPrimerMedicamento() != null ?
                     receta.getPrimerMedicamento() : "-");
@@ -112,7 +109,6 @@ public class VerRecetaDespachoController {
             lblIndicaciones.setText("-");
         }
 
-        // Datos de la receta
         lblRecetaConfeccion.setText(receta.getFechaConfeccion() != null ?
                 receta.getFechaConfeccion().toString() : "-");
         lblRecetaRetiro.setText(receta.getFechaRetiro() != null ?

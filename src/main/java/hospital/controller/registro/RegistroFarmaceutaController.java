@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.Alerta;
 import hospital.controller.busqueda.Async;
 import hospital.logica.FarmaceutaLogica;
 import hospital.model.Administrador;
@@ -30,7 +31,7 @@ public class RegistroFarmaceutaController {
     private ProgressIndicator progressIndicator;
 
     private final FarmaceutaLogica farmaceutaIntermediaria = new FarmaceutaLogica();
-    private final Administrador admin = new Administrador(); // Se debe pasar el admin logueado
+    private final Administrador admin = new Administrador();
 
     @FXML
     public void initialize() {
@@ -42,14 +43,12 @@ public class RegistroFarmaceutaController {
     }
 
     private void configurarValidaciones() {
-        // Validación en tiempo real para ID (solo números y letras)
         txtIdentificacion.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.matches("[a-zA-Z0-9]*")) {
                 txtIdentificacion.setText(oldValue);
             }
         });
 
-        // Validación para nombre (solo letras y espacios)
         txtNombre.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]*")) {
                 txtNombre.setText(oldValue);
@@ -92,7 +91,7 @@ public class RegistroFarmaceutaController {
                     mostrarCargando(false);
                     deshabilitarControles(false);
 
-                    mostrarInfo("Farmaceuta agregado exitosamente.\n" +
+                    Alerta.info("Información","Farmaceuta agregado exitosamente.\n" +
                             "ID: " + farmaceuta.getId() + "\n" +
                             "Nombre: " + farmaceuta.getNombre());
 
@@ -104,7 +103,7 @@ public class RegistroFarmaceutaController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al agregar farmaceuta: " + error.getMessage());
+                    Alerta.error("Error","Error al agregar farmaceuta: " + error.getMessage());
                 }
         );
     }
@@ -117,7 +116,6 @@ public class RegistroFarmaceutaController {
     private boolean validarCampos() {
         StringBuilder errores = new StringBuilder();
 
-        // Validar ID
         String id = txtIdentificacion.getText().trim();
         if (id.isEmpty()) {
             errores.append("- El ID es obligatorio.\n");
@@ -125,7 +123,6 @@ public class RegistroFarmaceutaController {
             errores.append("- El ID debe tener al menos 3 caracteres.\n");
         }
 
-        // Validar nombre
         String nombre = txtNombre.getText().trim();
         if (nombre.isEmpty()) {
             errores.append("- El nombre es obligatorio.\n");
@@ -133,9 +130,8 @@ public class RegistroFarmaceutaController {
             errores.append("- El nombre debe tener al menos 2 caracteres.\n");
         }
 
-        // Mostrar errores si existen
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -160,7 +156,7 @@ public class RegistroFarmaceutaController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda: " + e.getMessage());
+            Alerta.error("Error","Error al volver a la vista de búsqueda: " + e.getMessage());
         }
     }
 
@@ -178,14 +174,6 @@ public class RegistroFarmaceutaController {
         }
     }
 
-    // Métodos utilitarios
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
 
     private void deshabilitarControles(boolean deshabilitar) {
         txtIdentificacion.setDisable(deshabilitar);
@@ -197,25 +185,6 @@ public class RegistroFarmaceutaController {
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
-        }
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarConfirmacion(String mensaje, Runnable accion) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            accion.run();
         }
     }
 }

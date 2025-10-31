@@ -45,7 +45,6 @@ public class EditarPacienteController {
 
     @FXML
     public void initialize() {
-        // Hacer el campo ID no editable (solo lectura)
         txtIdentificacion.setEditable(false);
         txtIdentificacion.setStyle(txtIdentificacion.getStyle() + "; -fx-background-color: #f5f5f5;");
 
@@ -53,7 +52,6 @@ public class EditarPacienteController {
             progressIndicator.setVisible(false);
         }
 
-        // Enfocar el campo nombre por defecto
         txtNombre.requestFocus();
     }
 
@@ -69,7 +67,6 @@ public class EditarPacienteController {
 
     @FXML
     public void Guardar(ActionEvent event) {
-        // Validar que los campos no estén vacíos
         if (!validarCampos()) {
             return;
         }
@@ -81,11 +78,11 @@ public class EditarPacienteController {
         pacienteActualizado.setFechaNacimiento(dtpFechaNac.getValue());
 
         if (sonIguales(pacienteOriginal, pacienteActualizado)) {
-            mostrarInfo("No se han detectado cambios en los datos del paciente.");
+            Alerta.info("Información","No se han detectado cambios en los datos del paciente.");
             return;
         }
 
-        mostrarConfirmacion("¿Está seguro que desea guardar los cambios?",
+        Alerta.confirmacion("¿Está seguro que desea guardar los cambios?",
                 () -> guardarPacienteAsync(pacienteActualizado));
     }
 
@@ -96,7 +93,6 @@ public class EditarPacienteController {
         Async.runVoid(
                 () -> {
                     try {
-                        // Actualizar paciente usando el controller
                         pacienteIntermediaria.modificar(admin, pacienteActualizado);
                     } catch (Exception e) {
                         throw new RuntimeException("Error al actualizar: " + e.getMessage(), e);
@@ -106,30 +102,28 @@ public class EditarPacienteController {
                 () -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Paciente actualizado correctamente.");
+                    Alerta.info("Información","Paciente actualizado correctamente.");
                     volverABusqueda();
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al actualizar paciente: " + error.getMessage());
+                    Alerta.error("Error","Error al actualizar paciente: " + error.getMessage());
                 }
         );
     }
 
     @FXML
     public void Volver(ActionEvent event) {
-        // Crear objeto paciente con datos actuales para verificar cambios
         Paciente pacienteActual = new Paciente();
         pacienteActual.setId(txtIdentificacion.getText().trim());
         pacienteActual.setNombre(txtNombre.getText().trim());
         pacienteActual.setTelefono(txtTelefono.getText().trim());
         pacienteActual.setFechaNacimiento(dtpFechaNac.getValue());
 
-        // Verificar si hay cambios sin guardar
         if (!sonIguales(pacienteOriginal, pacienteActual)) {
-            mostrarConfirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
+            Alerta.confirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
                     this::volverABusqueda);
         } else {
             volverABusqueda();
@@ -162,7 +156,7 @@ public class EditarPacienteController {
         }
 
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -188,7 +182,7 @@ public class EditarPacienteController {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda.");
+            Alerta.error("Error","Error al volver a la vista de búsqueda.");
         }
     }
 
@@ -206,35 +200,6 @@ public class EditarPacienteController {
         }
     }
 
-    // Métodos utilitarios para mostrar alertas
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarConfirmacion(String mensaje, Runnable accion) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            accion.run();
-        }
-    }
-
-    // Getter para testing o uso externo
     public Paciente getPacienteOriginal() {
         return pacienteOriginal;
     }

@@ -1,5 +1,6 @@
 package hospital.controller.registro;
 
+import hospital.controller.Alerta;
 import hospital.controller.busqueda.Async;
 import hospital.logica.PacienteLogica;
 import hospital.model.Administrador;
@@ -16,19 +17,18 @@ import java.time.LocalDate;
 
 public class RegistroPacienteController {
 
-    // Corregir los nombres de las variables para que coincidan con los IDs del FXML
     @FXML private TextField txtIdentificacion;
     @FXML private TextField txtNombre;
-    @FXML private TextField txtTelefono; // El FXML no tiene fx:id para este campo, necesita agregarse
+    @FXML private TextField txtTelefono;
     @FXML private DatePicker dtpFechaNac;
 
-    @FXML private Button btnGuardar; // El FXML no tiene fx:id, necesita agregarse
+    @FXML private Button btnGuardar;
     @FXML private Button btnVolver;
 
     @FXML private ProgressIndicator progressIndicator;
 
     private final PacienteLogica pacienteIntermediaria = new PacienteLogica();
-    private final Administrador admin = new Administrador(); // Puedes pasar el admin logueado
+    private final Administrador admin = new Administrador();
 
     @FXML
     public void initialize() {
@@ -76,7 +76,7 @@ public class RegistroPacienteController {
                     mostrarCargando(false);
                     deshabilitarControles(false);
 
-                    mostrarInfo("Paciente registrado exitosamente.\n" +
+                    Alerta.error("Error","Paciente registrado exitosamente.\n" +
                             "ID: " + paciente.getId() + "\n" +
                             "Nombre: " + paciente.getNombre() + "\n" +
                             "Teléfono: " + paciente.getTelefono() + "\n" +
@@ -90,7 +90,7 @@ public class RegistroPacienteController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al registrar paciente: " + error.getMessage());
+                    Alerta.error("Error","Error al registrar paciente: " + error.getMessage());
                 }
         );
     }
@@ -108,7 +108,6 @@ public class RegistroPacienteController {
         String telefono = txtTelefono.getText();
         LocalDate fecha = dtpFechaNac.getValue();
 
-        // Validaciones básicas como en las otras clases
         if (id == null || id.trim().isEmpty()) {
             errores.append("- El ID es obligatorio.\n");
         } else if (id.trim().length() < 2) {
@@ -132,7 +131,7 @@ public class RegistroPacienteController {
         }
 
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -157,7 +156,7 @@ public class RegistroPacienteController {
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la vista de búsqueda.");
+            Alerta.error("Error","Error al volver a la vista de búsqueda.");
         }
     }
 
@@ -174,23 +173,6 @@ public class RegistroPacienteController {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
         }
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("Ha ocurrido un error");
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Registro Exitoso");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
     }
 
 }

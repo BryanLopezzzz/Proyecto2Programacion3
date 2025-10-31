@@ -1,6 +1,7 @@
 package hospital.controller.registro;
 
 
+import hospital.controller.Alerta;
 import hospital.controller.busqueda.Async;
 import hospital.logica.MedicoLogica;
 import hospital.model.Administrador;
@@ -62,7 +63,6 @@ public class RegistroMedicoController {
     private void guardarAsync(String id, String nombre, String especialidad) {
         deshabilitarControles(true);
         mostrarCargando(true);
-// Si se analiza, se vera que el metodo de hilos es muy repetitivo, pero hay que esperar la confimacion de su funcionalidad
         Async.Run(
                 () -> {
                     try {
@@ -96,7 +96,7 @@ public class RegistroMedicoController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al registrar médico: " + error.getMessage());
+                    Alerta.error("Error","Error al registrar médico: " + error.getMessage());
                 }
         );
     }
@@ -132,7 +132,7 @@ public class RegistroMedicoController {
         }
 
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -158,17 +158,10 @@ public class RegistroMedicoController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la búsqueda de médicos.");
+            Alerta.error("Error","Error al volver a la búsqueda de médicos.");
         }
     }
 
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
 
     private void deshabilitarControles(boolean deshabilitar) {
         txtIdentificacion.setDisable(deshabilitar);

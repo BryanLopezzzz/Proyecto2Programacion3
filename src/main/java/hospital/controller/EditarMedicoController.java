@@ -42,7 +42,6 @@ public class EditarMedicoController {
 
     @FXML
     public void initialize() {
-        // El ID no debe ser editable en la modificación
         txtIdentificacion.setEditable(false);
         txtIdentificacion.setStyle("-fx-background-color: #f0f0f0;");
 
@@ -54,13 +53,12 @@ public class EditarMedicoController {
 
     public void inicializarConMedico(Medico medico) {
         if (medico == null) {
-            mostrarError("No se pudo cargar la información del médico.");
+            Alerta.error("Error","No se pudo cargar la información del médico.");
             return;
         }
 
         this.medicoActual = medico;
 
-        // Cargar los datos en los campos
         txtIdentificacion.setText(medico.getId());
         txtNombre.setText(medico.getNombre());
         txtEspecialidad.setText(medico.getEspecialidad());
@@ -72,14 +70,13 @@ public class EditarMedicoController {
             return;
         }
 
-        // Verificar si hubo cambios
+
         if (!hayCambios()) {
-            mostrarInfo("No se detectaron cambios para guardar.");
+            Alerta.info("Información","No se detectaron cambios para guardar.");
             return;
         }
 
-        // Mostrar confirmación antes de guardar
-        mostrarConfirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicoAsync);
+        Alerta.confirmacion("¿Está seguro que desea guardar los cambios?", this::guardarMedicoAsync);
     }
 
     private void guardarMedicoAsync() {
@@ -89,13 +86,11 @@ public class EditarMedicoController {
         Async.runVoid(
                 () -> {
                     try {
-                        // Crear médico con los datos actualizados
                         Medico medicoModificado = new Medico();
                         medicoModificado.setId(txtIdentificacion.getText().trim());
                         medicoModificado.setNombre(txtNombre.getText().trim());
                         medicoModificado.setEspecialidad(txtEspecialidad.getText().trim());
 
-                        // Si el médico original tenía clave, la mantenemos
                         if (medicoActual.getClave() != null) {
                             medicoModificado.setClave(medicoActual.getClave());
                         }
@@ -109,23 +104,22 @@ public class EditarMedicoController {
                 () -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarInfo("Médico modificado exitosamente.");
+                    Alerta.info("Información","Médico modificado exitosamente.");
                     volverABusqueda();
                 },
                 // OnError
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al guardar médico: " + error.getMessage());
+                    Alerta.error("Error","Error al guardar médico: " + error.getMessage());
                 }
         );
     }
 
     @FXML
     public void Volver(ActionEvent event) {
-        // Verificar si hay cambios sin guardar
         if (hayCambios()) {
-            mostrarConfirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
+            Alerta.confirmacion("Hay cambios sin guardar. ¿Está seguro que desea salir?",
                     this::volverABusqueda);
         } else {
             volverABusqueda();
@@ -152,7 +146,7 @@ public class EditarMedicoController {
         }
 
         if (errores.length() > 0) {
-            mostrarError("Por favor corrija los siguientes errores:\n\n" + errores.toString());
+            Alerta.error("Error","Por favor corrija los siguientes errores:\n\n" + errores.toString());
             return false;
         }
 
@@ -183,7 +177,7 @@ public class EditarMedicoController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            mostrarError("Error al volver a la búsqueda de médicos.");
+            Alerta.error("Error","Error al volver a la búsqueda de médicos.");
         }
     }
 
@@ -197,33 +191,6 @@ public class EditarMedicoController {
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
-        }
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarConfirmacion(String mensaje, Runnable accion) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            accion.run();
         }
     }
 

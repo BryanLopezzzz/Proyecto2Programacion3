@@ -154,7 +154,6 @@ public class CambioClaveController {
 
                     Alerta.error("Error", error.getMessage());
 
-                    // Se limpia solo el campo de contraseña actual por seguridad
                     txtContrasenaAnterior.clear();
                     txtContrasenaAnteriorVisible.clear();
                     txtContrasenaAnterior.requestFocus();

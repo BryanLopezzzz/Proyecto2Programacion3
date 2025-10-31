@@ -60,7 +60,6 @@ public class DespachoController {
 
     @FXML
     public void initialize() {
-        // Configuración de columnas
         colIdentificacionReceta.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleStringProperty(data.getValue().getId())
         );
@@ -233,7 +232,6 @@ public class DespachoController {
             stage.setTitle("Cambiar Estado");
             stage.showAndWait();
 
-            // Recargar recetas después de cambiar estado
             if (pacienteSeleccionado != null) {
                 filtrarRecetasPorPacienteAsync();
             } else {

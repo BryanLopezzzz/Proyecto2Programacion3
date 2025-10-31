@@ -118,9 +118,9 @@ public class LoginController {
 
                         String mensaje = partes.length > 1 ? partes[1] : "Error desconocido";
                         if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
-                            mostrarError("Usuario o contraseña incorrectos.");
+                            Alerta.error("Error","Usuario o contraseña incorrectos.");
                         } else {
-                            mostrarError("Error de autenticación: " + mensaje);
+                            Alerta.error("Error","Error de autenticación: " + mensaje);
                         }
 
                         limpiarCampos();
@@ -129,7 +129,7 @@ public class LoginController {
                 } catch (Exception e) {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error procesando respuesta: " + e.getMessage());
+                    Alerta.error("Error","Error procesando respuesta: " + e.getMessage());
                     limpiarCampos();
                 }
             });
@@ -158,9 +158,9 @@ public class LoginController {
 
                         String mensaje = error.getMessage();
                         if (mensaje.contains("Credenciales incorrectas")) {
-                            mostrarError("Usuario o contraseña incorrectos.");
+                            Alerta.error("Error","Usuario o contraseña incorrectos.");
                         } else {
-                            mostrarError("Error al iniciar sesión: " + mensaje);
+                            Alerta.error("Error","Error al iniciar sesión: " + mensaje);
                         }
 
                         limpiarCampos();
@@ -228,7 +228,7 @@ public class LoginController {
         } catch (Exception e) {
             mostrarCargando(false);
             deshabilitarControles(false);
-            mostrarError("Error al cargar el dashboard: " + e.getMessage());
+            Alerta.error("Error","Error al cargar el dashboard: " + e.getMessage());
         }
     }
 
@@ -255,7 +255,6 @@ public class LoginController {
             imgVerClave.setImage(new javafx.scene.image.Image(getClass().getResourceAsStream("/icons/eye.png")));
         }
     }
-    //Metodos nuevo, verificar si sirve como se espera con hilos
     private void deshabilitarControles(boolean deshabilitar) {
         txtUsuario.setDisable(deshabilitar);
         txtClave.setDisable(deshabilitar);
@@ -268,14 +267,6 @@ public class LoginController {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
         }
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error de autenticación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
     }
 
     private void limpiarCampos() {

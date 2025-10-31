@@ -115,7 +115,7 @@ public class BuscarPacientePreescripcionController {
                 error -> {
                     mostrarCargando(false);
                     deshabilitarControles(false);
-                    mostrarError("Error al cargar pacientes: " + error.getMessage());
+                    Alerta.error("Error","Error al cargar pacientes: " + error.getMessage());
 
                     pacientesObs = FXCollections.observableArrayList();
                     todosPacientes = FXCollections.observableArrayList();
@@ -126,12 +126,10 @@ public class BuscarPacientePreescripcionController {
 
     private void configurarBusquedaEnTiempoReal() {
         txtBuscar.textProperty().addListener((observable, oldValue, newValue) -> {
-            // Cancelar búsqueda anterior si existe
             if (searchTimer != null) {
                 searchTimer.cancel();
             }
 
-            // Programar nueva búsqueda después de 300ms de inactividad
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
                 @Override
@@ -201,7 +199,7 @@ public class BuscarPacientePreescripcionController {
                     txtBuscar.setDisable(false);
                     btnFiltro.setDisable(false);
                     mostrarCargando(false);
-                    mostrarError("Error al buscar pacientes: " + error.getMessage());
+                    Alerta.error("Error","Error al buscar pacientes: " + error.getMessage());
                 }
         );
     }
@@ -239,13 +237,6 @@ public class BuscarPacientePreescripcionController {
         return pacienteSeleccionado;
     }
 
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
     private void deshabilitarControles(boolean deshabilitar) {
         btnSeleccionar.setDisable(deshabilitar);
         txtBuscar.setDisable(deshabilitar);

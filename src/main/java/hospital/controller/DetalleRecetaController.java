@@ -40,7 +40,6 @@ public class DetalleRecetaController {
         if (detalle == null) return;
         this.modoEdicion = true;
         this.detalleEditable = detalle;
-        // Prefill UI
         txtCantidad.setText(String.valueOf(detalle.getCantidad()));
         txtDuracion.setText(String.valueOf(detalle.getDiasTratamiento()));
         txtIndicaciones.setText(detalle.getIndicaciones());
@@ -81,7 +80,7 @@ public class DetalleRecetaController {
             }
 
         } catch (NumberFormatException e) {
-            mostrarError("Entrada inválida", "Cantidad y duración deben ser números enteros.");
+            Alerta.error("Entrada inválida", "Cantidad y duración deben ser números enteros.");
         }
     }
 
@@ -121,7 +120,7 @@ public class DetalleRecetaController {
                 // OnError
                 error -> {
                     deshabilitarControles(false);
-                    mostrarError("Error", error.getMessage());
+                    Alerta.error("Error", error.getMessage());
                 }
         );
     }
@@ -146,18 +145,5 @@ public class DetalleRecetaController {
 
     public DetalleReceta getDetalleCreado() {
         return detalleCreado;
-    }
-
-    private void mostrarError(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarInfo(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, mensaje);
-        alert.showAndWait();
     }
 }

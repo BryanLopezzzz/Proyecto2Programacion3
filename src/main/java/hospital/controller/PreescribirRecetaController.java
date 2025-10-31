@@ -232,7 +232,7 @@ public class PreescribirRecetaController {
     private void EliminarReceta(ActionEvent event) {
         DetalleReceta detalleSeleccionado = tblRecetas.getSelectionModel().getSelectedItem();
         if (detalleSeleccionado == null) {
-            mostrarAdvertencia("Selección requerida", "Debe seleccionar un detalle para eliminar.");
+            Alerta.advertencia("Selección requerida", "Debe seleccionar un detalle para eliminar.");
             return;
         }
 
@@ -256,7 +256,7 @@ public class PreescribirRecetaController {
     private void EditarReceta(ActionEvent event) {
         DetalleReceta detalleSeleccionado = tblRecetas.getSelectionModel().getSelectedItem();
         if (detalleSeleccionado == null) {
-            mostrarAdvertencia("Selección requerida", "Debe seleccionar un detalle para editar.");
+            Alerta.advertencia("Selección requerida", "Debe seleccionar un detalle para editar.");
             return;
         }
         if (medico == null) {
@@ -307,7 +307,7 @@ public class PreescribirRecetaController {
     @FXML
     private void Preescribir(ActionEvent event) {
         if (pacienteSeleccionado == null) {
-            mostrarAdvertencia("Paciente requerido", "Debe seleccionar un paciente.");
+            Alerta.advertencia("Paciente requerido", "Debe seleccionar un paciente.");
             return;
         }
         if (medico == null) {
@@ -315,15 +315,15 @@ public class PreescribirRecetaController {
             return;
         }
         if (dtpFechaRetiro.getValue() == null) {
-            mostrarAdvertencia("Fecha requerida", "Debe establecer una fecha de retiro.");
+            Alerta.advertencia("Fecha requerida", "Debe establecer una fecha de retiro.");
             return;
         }
         if (dtpFechaRetiro.getValue().isBefore(LocalDate.now())) {
-            mostrarAdvertencia("Fecha inválida", "La fecha de retiro no puede ser anterior a hoy.");
+            Alerta.advertencia("Fecha inválida", "La fecha de retiro no puede ser anterior a hoy.");
             return;
         }
         if (listaDetalles.isEmpty()) {
-            mostrarAdvertencia("Medicamentos requeridos", "Debe agregar al menos un medicamento a la receta.");
+            Alerta.advertencia("Medicamentos requeridos", "Debe agregar al menos un medicamento a la receta.");
             return;
         }
 
@@ -367,7 +367,7 @@ public class PreescribirRecetaController {
                     mostrarCargando(false);
                     deshabilitarControles(false);
 
-                    mostrarInformacion("Éxito",
+                    Alerta.info("Éxito",
                             "Receta preescrita correctamente con ID: " + receta.getId() + "\n" +
                                     "Paciente: " + receta.getPaciente().getNombre() + "\n" +
                                     "Medicamentos: " + receta.getDetalles().size());
@@ -459,25 +459,11 @@ public class PreescribirRecetaController {
         btnVolver.setDisable(deshabilitar);
         dtpFechaRetiro.setDisable(deshabilitar);
     }
-//Estis hay que unirlos a la clase Alerta para generar un codigo más limpio
+
     private void mostrarCargando(boolean mostrar) {
         if (progressIndicator != null) {
             progressIndicator.setVisible(mostrar);
         }
     }
 
-    private void mostrarInformacion(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-    private void mostrarAdvertencia(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
 }

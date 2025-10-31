@@ -122,14 +122,14 @@ public class DashboardController {
 
     private void inicializarChat() {
         if (!serviceProxy.isConectado()) {
-            return; // Si no hay servidor, no configurar chat
+            return;
         }
 
         serviceProxy.setOnMensajeRecibido(mensaje -> {
             switch (mensaje.getTipo()) {
                 case USUARIO_CONECTADO:
                 case USUARIO_DESCONECTADO:
-                    mostrarNotificacion("Sistema", mensaje.getContenido());
+                    Alerta.notificacionTemporal("Sistema", mensaje.getContenido());
                     actualizarUsuariosActivos();
                     break;
 
@@ -156,11 +156,11 @@ public class DashboardController {
                     String usuarioNombre = partes[3];
 
                     if ("LOGIN".equals(accion)) {
-                        mostrarNotificacion("Usuario conectado",
+                        Alerta.notificacionTemporal("Usuario conectado",
                                 usuarioNombre + " se ha conectado al sistema");
                         actualizarUsuariosActivos();
                     } else if ("LOGOUT".equals(accion)) {
-                        mostrarNotificacion("Usuario desconectado",
+                        Alerta.notificacionTemporal("Usuario desconectado",
                                 usuarioNombre + " se ha desconectado");
                         actualizarUsuariosActivos();
                     }
@@ -182,7 +182,6 @@ public class DashboardController {
             return;
         }
 
-        // ✅ NUEVO: Actualizar lista con ServiceProxy
         serviceProxy.listarUsuariosActivos(
                 usuarios -> {
                     javafx.collections.ObservableList<String> nombres =
@@ -201,23 +200,9 @@ public class DashboardController {
                     }
                 },
                 error -> {
-                    // Error silencioso en dashboard
                     System.err.println("Error actualizando usuarios: " + error);
                 }
         );
-    }
-
-    private void mostrarNotificacion(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-
-        // Hacer que se cierre automáticamente después de 3 segundos
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> alert.close()));
-        timeline.play();
-
-        alert.show();
     }
 
     private void mostrarMensajeRecibido(String remitente, String mensaje) {

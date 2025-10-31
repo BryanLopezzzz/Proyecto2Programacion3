@@ -34,15 +34,11 @@ public class ChatController {
             progressIndicator.setVisible(false);
         }
 
-        // Mostrar usuario actual
         if (Sesion.getUsuario() != null) {
             lblUsuarioActual.setText("Usuario: " + Sesion.getUsuario().getNombre());
         }
-
-        // ✅ CAMBIO: Configurar listener de mensajes con ServiceProxy
         configurarListenerMensajes();
 
-        // Cargar usuarios activos
         cargarUsuariosActivos();
 
         agregarMensajeSistema("Conectado al sistema de mensajería");
@@ -65,7 +61,6 @@ public class ChatController {
     }
 
     private void configurarListenerMensajes() {
-        // ✅ NUEVO: Listener simplificado con ServiceProxy
         serviceProxy.setOnMensajeRecibido(mensaje -> {
             switch (mensaje.getTipo()) {
                 case MENSAJE:
@@ -100,8 +95,7 @@ public class ChatController {
         txtAreaMensajes.appendText(String.format("[%s] %s: %s\n",
                 timestamp, remitente, mensaje));
 
-        // Mostrar notificación emergente
-        mostrarNotificacionMensaje(remitente, mensaje);
+        Alerta.mostrarNotificacionMensaje(remitente, mensaje);
     }
 
     private void agregarMensajeSistema(String mensaje) {
@@ -111,14 +105,6 @@ public class ChatController {
 
         txtAreaMensajes.appendText(String.format("[%s] SISTEMA: %s\n",
                 timestamp, mensaje));
-    }
-
-    private void mostrarNotificacionMensaje(String remitente, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Nuevo Mensaje");
-        alert.setHeaderText("Mensaje de: " + remitente);
-        alert.setContentText(mensaje);
-        alert.show();
     }
 
     @FXML
@@ -131,7 +117,6 @@ public class ChatController {
         mostrarCargando(true);
         deshabilitarControles(true);
 
-        // ✅ NUEVO: Cargar usuarios con ServiceProxy (simple y limpio)
         serviceProxy.listarUsuariosActivos(
                 // OnSuccess
                 usuarios -> {
@@ -143,6 +128,7 @@ public class ChatController {
 
                     if (usuarios.isEmpty()) {
                         agregarMensajeSistema("No hay otros usuarios conectados");
+                        Alerta.info("Información", "Actualmente no hay otros usuarios conectados.");
                     }
                 },
                 // OnError
@@ -159,14 +145,14 @@ public class ChatController {
         UsuarioActivo destinatario = lstUsuariosActivos.getSelectionModel().getSelectedItem();
 
         if (destinatario == null) {
-            Alerta.error("Error", "Debe seleccionar un usuario de la lista");
+            Alerta.advertencia("Advertencia", "Debe seleccionar un usuario de la lista");
             return;
         }
 
         String mensaje = txtMensaje.getText().trim();
 
         if (mensaje.isEmpty()) {
-            Alerta.error("Error", "El mensaje no puede estar vacío");
+            Alerta.advertencia("Advertencia", "El mensaje no puede estar vacío");
             return;
         }
 
@@ -178,13 +164,11 @@ public class ChatController {
         deshabilitarControles(true);
         mostrarCargando(true);
 
-        // ✅ NUEVO: Enviar mensaje con ServiceProxy
         serviceProxy.enviarMensaje(destinatario.getId(), mensaje, exito -> {
             mostrarCargando(false);
             deshabilitarControles(false);
 
             if (exito) {
-                // Mostrar mensaje enviado
                 String timestamp = java.time.LocalTime.now().format(
                         java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
                 );

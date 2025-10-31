@@ -108,5 +108,10 @@
       </Button>
       <Pane fx:id="paneLineChart" cache="true" cacheHint="QUALITY" layoutX="347.0" layoutY="113.0" prefHeight="200.0" prefWidth="200.0" />
       <Pane fx:id="panePieChart" layoutX="587.0" layoutY="341.0" prefHeight="200.0" prefWidth="200.0" />
+      <Button id="btnAbrirChat" fx:id="btnAbrirChat" layoutX="334.0" layoutY="26.0" mnemonicParsing="false" onAction="#abrirChat" style="-fx-background-color: transparent; -fx-cursor: hand;" text="💬 Chat" textFill="#16254c">
+         <font>
+            <Font name="System Bold" size="32.0" />
+         </font>
+      </Button>
    </children>
 </AnchorPane>

@@ -15,6 +15,8 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import hospital.servicios.HospitalClient;
 
+import java.util.function.Consumer;
+
 public class LoginController {
     @FXML
     private TextField txtUsuario;
@@ -31,6 +33,7 @@ public class LoginController {
     @FXML //Es lo nuevo de hilos
     private ProgressIndicator progressIndicator;
 
+    private static HospitalClient clientGlobal;
     private HospitalClient client;
     private final LoginLogica loginLogica = new LoginLogica();
     private boolean claveVisible = false;
@@ -49,32 +52,36 @@ public class LoginController {
             Alerta.error("Error","El clave es obligatorio.");
             return;
         }
-        conectarAlServidor();
+        verificarYReconectar();
         loginAsync(id, clave);
     }
 
     private void conectarAlServidor() {
         try {
-            client = HospitalClient.getInstance();
+            if (clientGlobal == null) {
+                clientGlobal = HospitalClient.getInstance();
+            }
 
             String host = "localhost";
             int port = 5000;
 
-            if (!client.isConectado()) {
-                client.conectar(host, port);
+            if (!clientGlobal.isConectado()) {
+                clientGlobal.conectar(host, port);
                 System.out.println("Conectado al servidor: " + host + ":" + port);
             }
 
         } catch (Exception e) {
             System.err.println("Error conectando al servidor: " + e.getMessage());
-
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Advertencia");
-            alert.setHeaderText("No se pudo conectar al servidor");
-            alert.setContentText("El sistema funcionará en modo local.\n" +
-                    "Funcionalidades de chat y notificaciones no estarán disponibles.\n\n" +
-                    "Error: " + e.getMessage());
-            alert.show();
+            clientGlobal = null;
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Advertencia");
+                alert.setHeaderText("No se pudo conectar al servidor");
+                alert.setContentText("El sistema funcionará en modo local.\n" +
+                        "Funcionalidades de chat y notificaciones no estarán disponibles.\n\n" +
+                        "Error: " + e.getMessage());
+                alert.show();
+            });
         }
     }
 
@@ -82,7 +89,7 @@ public class LoginController {
         deshabilitarControles(true);
         mostrarCargando(true);
 
-        if (client != null && client.isConectado()) {
+        if (clientGlobal != null && clientGlobal.isConectado()) {
             loginRemoto(id, clave);
         } else {
             loginLocal(id, clave);
@@ -90,7 +97,9 @@ public class LoginController {
     }
 
     private void loginRemoto(String id, String clave) {
-        client.login(id, clave, respuesta -> {
+        Consumer<String> listenerOriginal = null;
+
+        clientGlobal.login(id, clave, respuesta -> {
             Platform.runLater(() -> {
                 try {
                     String[] partes = respuesta.split("\\|");
@@ -99,11 +108,8 @@ public class LoginController {
                         String nombre = partes[1];
                         String rol = partes[2];
 
-                        // Crear usuario según el rol
                         Usuario usuario = crearUsuarioPorRol(id, nombre, rol);
                         Sesion.setUsuario(usuario);
-
-                        // Cargar dashboard
                         cargarDashboard();
 
                     } else {
@@ -111,7 +117,11 @@ public class LoginController {
                         deshabilitarControles(false);
 
                         String mensaje = partes.length > 1 ? partes[1] : "Error desconocido";
-                        mostrarError(mensaje);
+                        if (mensaje.contains("Credenciales") || mensaje.contains("incorrectas")) {
+                            mostrarError("Usuario o contraseña incorrectos.");
+                        } else {
+                            mostrarError("Error de autenticación: " + mensaje);
+                        }
 
                         limpiarCampos();
                     }
@@ -120,6 +130,7 @@ public class LoginController {
                     mostrarCargando(false);
                     deshabilitarControles(false);
                     mostrarError("Error procesando respuesta: " + e.getMessage());
+                    limpiarCampos();
                 }
             });
         });
@@ -141,17 +152,19 @@ public class LoginController {
                 },
                 // OnError
                 error -> {
-                    mostrarCargando(false);
-                    deshabilitarControles(false);
+                    Platform.runLater(() -> {
+                        mostrarCargando(false);
+                        deshabilitarControles(false);
 
-                    String mensaje = error.getMessage();
-                    if (mensaje.contains("Credenciales incorrectas")) {
-                        mostrarError("Usuario o contraseña incorrectos.");
-                    } else {
-                        mostrarError("Error al iniciar sesión: " + mensaje);
-                    }
+                        String mensaje = error.getMessage();
+                        if (mensaje.contains("Credenciales incorrectas")) {
+                            mostrarError("Usuario o contraseña incorrectos.");
+                        } else {
+                            mostrarError("Error al iniciar sesión: " + mensaje);
+                        }
 
-                    limpiarCampos();
+                        limpiarCampos();
+                    });
                 }
         );
     }
@@ -189,29 +202,40 @@ public class LoginController {
             DashboardController dashboardController = loader.getController();
             dashboardController.setLoginController(loginLogica);
 
-            Stage stage = new Stage();
-            stage.setTitle("Sistema Hospital - Dashboard");
-            stage.setScene(scene);
+            Stage dashboardStage = new Stage();
+            dashboardStage.setTitle("Sistema Hospital - Dashboard");
+            dashboardStage.setScene(scene);
 
-            // Al cerrar el dashboard, desconectar del servidor
-            stage.setOnCloseRequest(event -> {
-                if (client != null && client.isConectado()) {
-                    client.logout(resp -> {
-                        System.out.println("Logout: " + resp);
-                    });
-                    client.desconectar();
+            dashboardStage.setOnCloseRequest(event -> {
+                if (clientGlobal != null && clientGlobal.isConectado()) {
+                    clientGlobal.logout(resp ->
+                            System.out.println("Logout: " + resp)
+                    );
+                    clientGlobal.desconectar();
+                    clientGlobal = null;
                 }
+                Platform.exit();
+                System.exit(0);
             });
 
-            stage.show();
+            dashboardStage.show();
 
-            Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
-            loginStage.close();
+            Platform.runLater(() -> {
+                Stage loginStage = (Stage) btnEntrar.getScene().getWindow();
+                loginStage.close();
+            });
 
         } catch (Exception e) {
             mostrarCargando(false);
             deshabilitarControles(false);
             mostrarError("Error al cargar el dashboard: " + e.getMessage());
+        }
+    }
+
+    private void verificarYReconectar() {
+        if (clientGlobal == null || !clientGlobal.isConectado()) {
+            System.out.println("Reconectando al servidor...");
+            conectarAlServidor();
         }
     }
 
@@ -255,8 +279,14 @@ public class LoginController {
     }
 
     private void limpiarCampos() {
-        txtClave.clear();
-        txtClaveVisible.clear();
-        txtClave.requestFocus();
+        Platform.runLater(() -> {
+            txtClave.clear();
+            txtClaveVisible.clear();
+            if (txtClave.isVisible()) {
+                txtClave.requestFocus();
+            } else {
+                txtClaveVisible.requestFocus();
+            }
+        });
     }
 }

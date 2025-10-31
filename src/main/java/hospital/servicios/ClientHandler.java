@@ -191,7 +191,7 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
 
         } catch (Exception e) {
             LOGGER.warning("Login fallido para: " + id);
-            return "ERROR|" + e.getMessage();
+            return "ERROR|Credenciales incorrectas";
         }
     }
 

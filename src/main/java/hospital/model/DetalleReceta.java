@@ -9,11 +9,6 @@ public class DetalleReceta {
     public DetalleReceta() {}
 
     public DetalleReceta(Medicamento medicamento, int cantidad, String indicaciones, int diasTratamiento) throws Exception {
-        if (medicamento == null) throw new Exception("El medicamento no puede ser nulo.");
-        if (cantidad <= 0) throw new Exception("La cantidad debe ser mayor que 0.");
-        if (indicaciones == null || indicaciones.isBlank()) throw new Exception("Las indicaciones son obligatorias.");
-        if (diasTratamiento <= 0) throw new Exception("Los días de tratamiento deben ser mayores que 0.");
-
         this.medicamento = medicamento;
         this.cantidad = cantidad;
         this.indicaciones = indicaciones;

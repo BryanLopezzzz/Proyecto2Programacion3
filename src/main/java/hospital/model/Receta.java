@@ -119,23 +119,4 @@ public class Receta {
     ///     //
     ///     //Farmaceuta entrega → entregada
     ///////////////////////////////////////////////////
-
-    public void cambiarEstado(EstadoReceta nuevoEstado) {
- //Así evitamos que alguien pase una receta de CONFECCIONADA directamente a ENTREGADA
-        // sin haber pasado por el proceso de farmacia.
-        switch (this.estado) {
-            case CONFECCIONADA:
-                if (nuevoEstado == EstadoReceta.EN_PROCESO || nuevoEstado == EstadoReceta.CANCELADA)
-                    this.estado = nuevoEstado;
-                break;
-            case EN_PROCESO:
-                if (nuevoEstado == EstadoReceta.LISTA || nuevoEstado == EstadoReceta.CANCELADA)
-                    this.estado = nuevoEstado;
-                break;
-            case LISTA:
-                if (nuevoEstado == EstadoReceta.ENTREGADA)
-                    this.estado = nuevoEstado;
-                break;
-        }
-    }
 }

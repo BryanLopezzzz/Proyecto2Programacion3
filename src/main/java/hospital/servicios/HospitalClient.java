@@ -373,6 +373,11 @@ public class HospitalClient {
         enviarComando(comando, callback);
     }
 
+    public void cargarHistorial(String otroUsuarioId, Consumer<String> callback) {
+        String comando = "CARGAR_HISTORIAL|" + otroUsuarioId;
+        enviarComando(comando, callback);
+    }
+
     public void listarUsuariosActivos(Consumer<String> callback) {
         enviarComando("LISTAR_USUARIOS_ACTIVOS", callback);
     }

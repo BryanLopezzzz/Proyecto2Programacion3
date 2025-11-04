@@ -1,6 +1,7 @@
 package hospital.controller;
 
 import hospital.logica.Sesion;
+import hospital.servicios.HospitalClient;
 import hospital.servicios.ServiceProxy;
 import hospital.servicios.ServiceProxy.*;
 import javafx.application.Platform;
@@ -9,6 +10,9 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ChatController {
     @FXML private ListView<UsuarioActivo> lstUsuariosActivos;
@@ -44,21 +48,71 @@ public class ChatController {
         agregarMensajeSistema("Conectado al sistema de mensajería");
     }
 
-    private void configurarListaUsuarios() {
-        lstUsuariosActivos.setCellFactory(param -> new ListCell<UsuarioActivo>() {
-            @Override
-            protected void updateItem(UsuarioActivo item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    setText(item.getNombre() + " (" + item.getRol() + ")");
-                    setStyle("-fx-padding: 5px;");
+        private void configurarListaUsuarios() {
+            lstUsuariosActivos.setCellFactory(param -> new ListCell<UsuarioActivo>() {
+                @Override
+                protected void updateItem(UsuarioActivo item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item.getNombre() + " (" + item.getRol() + ")");
+                        setStyle("-fx-padding: 5px;");
+                    }
                 }
-            }
-        });
-    }
+            });
+            lstUsuariosActivos.getSelectionModel().selectedItemProperty().addListener(
+                    (obs, oldVal, newVal) -> {
+                        if (newVal != null) {
+                            cargarHistorialConversacion(newVal.getId());
+                        }
+                    }
+            );
+        }
+
+        private void cargarHistorialConversacion(String otroUsuarioId) {
+            HospitalClient client = HospitalClient.getInstance();
+
+            client.cargarHistorial(otroUsuarioId, respuesta -> {
+                Platform.runLater(() -> {
+                    txtAreaMensajes.clear();
+
+                    if (respuesta.startsWith("OK")) {
+                        String[] partes = respuesta.split("\\|");
+
+                        if (partes.length > 1) {
+                            for (int i = 1; i < partes.length; i++) {
+                                String[] datos = partes[i].split(",", 3);
+                                if (datos.length >= 3) {
+                                    String remitenteId = datos[0];
+                                    String mensaje = datos[1];
+                                    String fechaStr = datos[2];
+
+                                    try {
+                                        LocalDateTime fecha = LocalDateTime.parse(fechaStr);
+                                        String timestamp = fecha.format(
+                                                DateTimeFormatter.ofPattern("HH:mm:ss")
+                                        );
+
+                                        String remitente = remitenteId.equals(Sesion.getUsuario().getId())
+                                                ? "Tú" : remitenteId;
+
+                                        txtAreaMensajes.appendText(
+                                                String.format("[%s] %s: %s\n", timestamp, remitente, mensaje)
+                                        );
+                                    } catch (Exception e) {
+                                        System.err.println("Error parseando fecha: " + e.getMessage());
+                                    }
+                                }
+                            }
+                        } else {
+                            txtAreaMensajes.appendText("--- Sin mensajes previos ---\n");
+                        }
+                    }
+                });
+            });
+        }
 
     private void configurarListenerMensajes() {
         serviceProxy.setOnMensajeRecibido(mensaje -> {

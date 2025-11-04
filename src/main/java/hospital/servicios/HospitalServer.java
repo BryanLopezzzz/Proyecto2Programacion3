@@ -3,9 +3,10 @@ package hospital.servicios;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.*;
 
 public class HospitalServer {
@@ -13,6 +14,7 @@ public class HospitalServer {
     private final Set<ClientHandler> clientes = Collections.synchronizedSet(new HashSet<>());
     private static final Logger LOGGER = Logger.getLogger(HospitalServer.class.getName());
     private volatile boolean running = true;
+    private final Map<String, List<MensajeHistorial>> historialesMensajes = new ConcurrentHashMap<>();
 
     public HospitalServer(int port) {
         this.port = port;
@@ -63,6 +65,27 @@ public class HospitalServer {
         }
     }
 
+    public void guardarMensaje(String remitenteId, String destinatarioId, String mensaje) {
+        String conversacionKey = generarKeyConversacion(remitenteId, destinatarioId);
+
+        historialesMensajes.computeIfAbsent(conversacionKey, k -> new ArrayList<>())
+                .add(new MensajeHistorial(remitenteId, destinatarioId, mensaje, LocalDateTime.now()));
+
+        LOGGER.info("Mensaje guardado en historial: " + remitenteId + " -> " + destinatarioId);
+    }
+
+    public List<MensajeHistorial> obtenerHistorial(String usuario1, String usuario2) {
+        String key = generarKeyConversacion(usuario1, usuario2);
+        return new ArrayList<>(historialesMensajes.getOrDefault(key, new ArrayList<>()));
+    }
+
+    private String generarKeyConversacion(String usuario1, String usuario2) {
+        // Ordenar alfabéticamente para que A-B y B-A sean la misma conversación
+        return usuario1.compareTo(usuario2) < 0 ?
+                usuario1 + ":" + usuario2 : usuario2 + ":" + usuario1;
+    }
+
+
     public void notificarLogin(ClientHandler clienteQueIngresa) {
         if (clienteQueIngresa == null || !clienteQueIngresa.isAutenticado()) {
             return;
@@ -92,6 +115,8 @@ public class HospitalServer {
             return false;
         }
 
+        guardarMensaje(remitente.getUsuarioId(), destinatarioId, mensaje);
+
         synchronized (clientes) {
             for (ClientHandler cliente : clientes) {
                 if (cliente.isAutenticado()
@@ -116,7 +141,8 @@ public class HospitalServer {
         }
 
         LOGGER.warning("Destinatario no encontrado o no conectado: " + destinatarioId);
-        return false;
+        System.out.println("Destinatario offline, mensaje guardado para: " + destinatarioId);
+        return true;
     }
 
 
@@ -246,6 +272,31 @@ public class HospitalServer {
                 }
             }
             System.out.println();
+        }
+    }
+    public static class MensajeHistorial {
+        private final String remitenteId;
+        private final String destinatarioId;
+        private final String mensaje;
+        private final LocalDateTime fecha;
+
+        public MensajeHistorial(String remitenteId, String destinatarioId, String mensaje, LocalDateTime fecha) {
+            this.remitenteId = remitenteId;
+            this.destinatarioId = destinatarioId;
+            this.mensaje = mensaje;
+            this.fecha = fecha;
+        }
+
+        public String getRemitenteId() { return remitenteId; }
+        public String getDestinatarioId() { return destinatarioId; }
+        public String getMensaje() { return mensaje; }
+        public LocalDateTime getFecha() { return fecha; }
+
+        @Override
+        public String toString() {
+            return String.format("[%s] %s → %s: %s",
+                    fecha.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                    remitenteId, destinatarioId, mensaje);
         }
     }
 }

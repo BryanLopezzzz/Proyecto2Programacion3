@@ -146,6 +146,8 @@ public class ClientHandler extends Thread { //Esta clase se puede simplificar co
                     return procesarEnviarMensaje(partes);
                 case "LISTAR_USUARIOS_ACTIVOS":
                     return procesarListarUsuariosActivos();
+                case "CARGAR_HISTORIAL":
+                    return procesarCargarHistorial(partes);
 
                 // ===== UTILIDAD =====
                 case "PING":
@@ -1013,6 +1015,34 @@ private String procesarEliminarMedicamento(String[] partes) {
                         .append(",")
                         .append(cliente.getRol());
             }
+        }
+
+        return sb.toString();
+    }
+
+    private String procesarCargarHistorial(String[] partes) {
+        if (partes.length < 2) {
+            return "ERROR|Formato: CARGAR_HISTORIAL|otroUsuarioId";
+        }
+
+        if (usuarioId == null) {
+            return "ERROR|Debe estar autenticado";
+        }
+
+        String otroUsuario = partes[1];
+        List<HospitalServer.MensajeHistorial> historial =
+                server.obtenerHistorial(usuarioId, otroUsuario);
+
+        if (historial.isEmpty()) {
+            return "OK";
+        }
+
+        StringBuilder sb = new StringBuilder("OK");
+        for (var msg : historial) {
+            sb.append("|")
+                    .append(msg.getRemitenteId()).append(",")
+                    .append(msg.getMensaje()).append(",")
+                    .append(msg.getFecha());
         }
 
         return sb.toString();

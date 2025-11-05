@@ -251,29 +251,6 @@ public class HospitalServer {
         System.out.println("Servidor apagado correctamente");
     }
 
-    public void mostrarEstadisticas() {
-        System.out.println("\n╔══════════════════════════════════════╗");
-        System.out.println("║      ESTADÍSTICAS DEL SERVIDOR       ║");
-        System.out.println("╠══════════════════════════════════════╣");
-        System.out.println("║ Conexiones activas: " + String.format("%-17d", getClientesActivos()) + "║");
-        System.out.println("║ Usuarios autenticados: " + String.format("%-14d", getUsuariosAutenticados()) + "║");
-        System.out.println("╚══════════════════════════════════════╝\n");
-
-        // Listar usuarios autenticados
-        if (getUsuariosAutenticados() > 0) {
-            System.out.println("Usuarios conectados:");
-            synchronized (clientes) {
-                for (ClientHandler cliente : clientes) {
-                    if (cliente.isAutenticado()) {
-                        System.out.println("  • " + cliente.getNombreUsuario()
-                                + " (" + cliente.getRol() + ") - ID: "
-                                + cliente.getUsuarioId());
-                    }
-                }
-            }
-            System.out.println();
-        }
-    }
     public static class MensajeHistorial {
         private final String remitenteId;
         private final String destinatarioId;

@@ -67,7 +67,7 @@ public class HospitalClient {
             iniciarListener();
             iniciarWatchdog();
 
-            System.out.println("✓ Conectado al servidor: " + host + ":" + port);
+            System.out.println("Conectado al servidor: " + host + ":" + port);
             notificarEstadoConexion(true);
 
         } catch (IOException e) {
@@ -83,17 +83,17 @@ public class HospitalClient {
                 String linea;
                 while (conectado.get() && (linea = in.readLine()) != null) {
                     final String mensaje = linea;
-                    System.out.println("← Recibido: " + mensaje);
+                    System.out.println("Recibido: " + mensaje);
                     procesarMensaje(mensaje);
                 }
             } catch (SocketException e) {
                 if (conectado.get()) {
-                    System.err.println("✗ Conexión perdida con el servidor");
+                    System.err.println("Conexión perdida con el servidor");
                     manejarDesconexion();
                 }
             } catch (IOException e) {
                 if (conectado.get()) {
-                    System.err.println("✗ Error en listener: " + e.getMessage());
+                    System.err.println("Error en listener: " + e.getMessage());
                     manejarDesconexion();
                 }
             }
@@ -111,7 +111,7 @@ public class HospitalClient {
                     Thread.sleep(30000); // Verificar cada 30 segundos
 
                     if (!verificarConexion()) {
-                        System.err.println("✗ Watchdog: Conexión no responde");
+                        System.err.println("Watchdog: Conexión no responde");
                         manejarDesconexion();
                         break;
                     }
@@ -156,7 +156,6 @@ public class HospitalClient {
             }
         });
 
-        // Intentar reconexión en segundo plano
         new Thread(this::intentarReconexion).start();
     }
 
@@ -194,7 +193,7 @@ public class HospitalClient {
 
         // Reconexión fallida después de todos los intentos
         reconectando.set(false);
-        System.err.println("✗ No se pudo reconectar después de " + MAX_INTENTOS_RECONEXION + " intentos");
+        System.err.println("No se pudo reconectar después de " + MAX_INTENTOS_RECONEXION + " intentos");
 
         Platform.runLater(() -> {
             if (onMensajeRecibido != null) {

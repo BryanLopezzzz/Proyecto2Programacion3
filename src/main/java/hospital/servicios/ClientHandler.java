@@ -803,7 +803,6 @@ private String procesarEliminarMedicamento(String[] partes) {
         }
 
         try {
-            // Extraer datos de la receta
             String recetaId = partes[1];
             String pacienteId = partes[2];
             String medicoId = partes[3];
@@ -812,12 +811,10 @@ private String procesarEliminarMedicamento(String[] partes) {
             String estadoStr = partes[6];
             int numDetalles = Integer.parseInt(partes[7]);
 
-            // Validar que el médico autenticado es quien crea la receta
             if (!medicoId.equals(usuarioId)) {
                 return "ERROR|Solo puede crear recetas como el médico autenticado";
             }
 
-            // Validar que haya suficientes detalles
             if (partes.length < 8 + numDetalles) {
                 return "ERROR|Faltan detalles de medicamentos. Se esperaban " + numDetalles;
             }

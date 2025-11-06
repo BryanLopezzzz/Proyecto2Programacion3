@@ -52,8 +52,6 @@ public class PacienteLogica {
         return buscarPorNombre(nombre);
     }
 
-    // --------- Escritura ---------
-
     public void agregar(Paciente paciente) throws Exception {
         validarPaciente(paciente);
 

@@ -6,7 +6,6 @@ import hospital.model.Medicamento;
 public class DetalleRecetaLogica {
 
     public static DetalleReceta crearDetalle(String medicamentoId, int cantidad, String indicaciones,int diasTratamiento, MedicamentoLogica medicamentoLogica) throws Exception {
-        // Resolver el medicamento
         Medicamento medicamento = medicamentoLogica.buscarPorCodigo(medicamentoId);
         if (medicamento == null) throw new Exception("Medicamento no encontrado: " + medicamentoId);
 
@@ -17,7 +16,6 @@ public class DetalleRecetaLogica {
         }
         if (indicaciones == null || indicaciones.isBlank()) throw new Exception("Las indicaciones son obligatorias.");
 
-        // Crear detalle
         return new DetalleReceta(medicamento, cantidad, indicaciones,diasTratamiento);
     }
 }

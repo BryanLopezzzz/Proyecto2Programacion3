@@ -34,7 +34,6 @@ public class UsuarioManager {
     }
 
 
-    // ==== LOGIN ====
     public Usuario login(String id, String clave) throws Exception {
         try {
             Usuario u = administradorLogica.buscarPorId(id);
@@ -52,7 +51,6 @@ public class UsuarioManager {
         }
     }
 
-    // ==== Cambio de clave ====
     public void cambiarClave(String id, String actual, String nueva) throws Exception {
         if (id == null || id.isBlank())
             throw new Exception("El id es obligatorio.");
@@ -76,7 +74,7 @@ public class UsuarioManager {
             if (!m.getClave().equals(actual))
                 throw new Exception("Clave actual incorrecta.");
             m.setClave(nueva);
-            medicoLogica.modificar(m); // Persistir
+            medicoLogica.modificar(m);
             return;
         }
 

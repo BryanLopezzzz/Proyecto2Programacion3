@@ -20,9 +20,6 @@ public class HospitalClient {
     private final AtomicBoolean conectado = new AtomicBoolean(false);
     private final AtomicBoolean reconectando = new AtomicBoolean(false);
 
-    private final Map<Integer, Consumer<String>> callbacks = new ConcurrentHashMap<>();
-    private final AtomicInteger requestId = new AtomicInteger(0);
-
     private Consumer<String> onMensajeRecibido;
     private Consumer<Boolean> onEstadoConexion;
 
@@ -247,21 +244,6 @@ public class HospitalClient {
         }
     }
 
-    /*public String enviarComandoSync(String comando) throws IOException {
-        if (!conectado) {
-            throw new IOException("No hay conexión con el servidor");
-        }
-
-        System.out.println("→ Enviando: " + comando);
-        out.println(comando);
-
-        // Esperar respuesta
-        String respuesta = in.readLine();
-        System.out.println("← Respuesta: " + respuesta);
-
-        return respuesta;
-    }
-*/
     public void enviarComando(String comando, Consumer<String> callback) {
         if (!conectado.get()) {
             if (callback != null) {
@@ -270,7 +252,6 @@ public class HospitalClient {
             return;
         }
 
-        // Registrar el callback con el tipo de comando
         String tipoComando = comando.split("\\|")[0];
         if (callback != null) {
             callbacksPendientes.put(tipoComando, callback);

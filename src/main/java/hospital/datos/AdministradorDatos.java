@@ -86,11 +86,6 @@ public class AdministradorDatos implements Plantilla {
         return lista;
     }
 
-    // --------- Métodos auxiliares específicos (más prácticos) ---------
-
-    /**
-     * Busca un administrador por su ID (String)
-     */
     public Administrador buscarPorId(String id) throws SQLException {
         String sql = "SELECT * FROM administrador WHERE id = ?";
         try (Connection cn = DB.getConnection();
@@ -110,9 +105,6 @@ public class AdministradorDatos implements Plantilla {
         return null;
     }
 
-    /**
-     * Lista todos los administradores ordenados por nombre
-     */
     public List<Administrador> listarTodos() throws SQLException {
         String sql = "SELECT * FROM administrador ORDER BY nombre";
         List<Administrador> lista = new ArrayList<>();
@@ -132,9 +124,6 @@ public class AdministradorDatos implements Plantilla {
         return lista;
     }
 
-    /**
-     * Busca administradores por nombre (búsqueda parcial)
-     */
     public List<Administrador> buscarPorNombre(String nombre) throws SQLException {
         String sql = "SELECT * FROM administrador WHERE nombre LIKE ? ORDER BY nombre";
         List<Administrador> lista = new ArrayList<>();

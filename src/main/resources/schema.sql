@@ -94,7 +94,7 @@ CREATE TABLE detalle_receta (
                                 CONSTRAINT fk_detalle_medicamento FOREIGN KEY (medicamento_codigo)
                                     REFERENCES medicamento(codigo) ON DELETE RESTRICT ON UPDATE CASCADE,
 
-    -- Evitar duplicados de medicamento en la misma receta
+
                                 CONSTRAINT uk_receta_medicamento UNIQUE (receta_id, medicamento_codigo),
 
                                 INDEX idx_detalle_receta (receta_id),
@@ -157,7 +157,7 @@ INSERT INTO detalle_receta (receta_id, medicamento_codigo, cantidad, indicacione
                                                                                                          ('REC-004', 'MED001', 6, 'Tomar 1 tableta en caso de dolor', 3);
 
 
--- Verificar recetas con sus detalles
+
 SELECT
     r.id AS receta_id,
     r.fecha,
@@ -172,7 +172,7 @@ FROM receta r
 GROUP BY r.id, r.fecha, r.estado, p.nombre, m.nombre
 ORDER BY r.fecha DESC;
 
--- Mostrar detalles completos de una receta
+
 SELECT
     r.id AS receta,
     med.nombre AS medicamento,
@@ -184,17 +184,14 @@ FROM receta r
          INNER JOIN medicamento med ON dr.medicamento_codigo = med.codigo
 WHERE r.id = 'REC-001';
 
--- =====================================================
--- CONSULTAS ÚTILES PARA EL DASHBOARD
--- =====================================================
 
--- Recetas por estado
+
 SELECT estado, COUNT(*) as cantidad
 FROM receta
 GROUP BY estado
 ORDER BY cantidad DESC;
 
--- Medicamentos más recetados
+
 SELECT
     m.nombre,
     m.presentacion,
@@ -206,7 +203,7 @@ GROUP BY m.nombre, m.presentacion
 ORDER BY total_recetado DESC
 LIMIT 10;
 
--- Recetas por médico
+
 SELECT
     m.nombre AS medico,
     m.especialidad,

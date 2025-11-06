@@ -100,7 +100,6 @@ public class HospitalServer {
         System.out.println("BROADCAST: Usuario ingresó - " + clienteQueIngresa.getNombreUsuario()
                 + " (" + clienteQueIngresa.getRol() + ")");
 
-        // Enviar a todos excepto al que acaba de ingresar
         synchronized (clientes) {
             for (ClientHandler cliente : clientes) {
                 if (cliente != clienteQueIngresa && cliente.isActivo()) {

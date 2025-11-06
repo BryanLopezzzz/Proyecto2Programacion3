@@ -14,7 +14,6 @@ public class MedicoLogica {
         this.datos = new MedicoDatos();
     }
 
-    // --------- Lectura ---------
 
     public List<Medico> listar() throws SQLException {
         return datos.listarTodos();
@@ -53,7 +52,6 @@ public class MedicoLogica {
         return listar();
     }
 
-    // --------- Escritura ---------
 
     public void agregar(Medico medico) throws Exception {
         validarMedicoAlta(medico);

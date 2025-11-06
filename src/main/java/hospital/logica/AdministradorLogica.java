@@ -13,8 +13,6 @@ public class AdministradorLogica {
         this.datos = new AdministradorDatos();
     }
 
-    // --------- Lectura ---------
-
     public List<Administrador> listar() {
         try {
             return datos.listarTodos();
@@ -41,7 +39,6 @@ public class AdministradorLogica {
         }
     }
 
-    // --------- Escritura ---------
 
     public void agregar(Administrador admin) throws Exception {
         validarAlta(admin);

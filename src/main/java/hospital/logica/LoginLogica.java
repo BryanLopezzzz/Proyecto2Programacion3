@@ -9,7 +9,6 @@ public class LoginLogica {
         this.usuarioManager = new UsuarioManager();
     }
 
-    // ==== LOGIN ====
     public Usuario login(String id, String clave) throws Exception {
         Usuario u = usuarioManager.login(id, clave);
         Sesion.setUsuario(u);
@@ -17,12 +16,10 @@ public class LoginLogica {
     }
 
 
-    // ==== LOGOUT ====
     public void logout() {
         Sesion.setUsuario(null);
     }
 
-    // ==== CAMBIO DE CLAVE ====
     public void cambiarClave(String actual, String nueva) throws Exception {
         Usuario usuarioActual = Sesion.getUsuario();
         if (usuarioActual == null) {
@@ -34,7 +31,6 @@ public class LoginLogica {
         }
         usuarioActual.setClave(nueva);
 
-        // actualizar segun el tipo de dato
         UsuarioManager.TipoUsuario tipo = new UsuarioManager().determinarTipoUsuario(usuarioActual.getId());
         switch (tipo) {
             case ADMINISTRADOR:
@@ -52,7 +48,6 @@ public class LoginLogica {
         Sesion.setUsuario(usuarioActual);
     }
 
-    // ==== Estado de sesión ====
     public Usuario getUsuarioActual() {
         return UsuarioManager.getUsuarioActual();
     }

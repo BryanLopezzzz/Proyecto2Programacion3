@@ -136,7 +136,7 @@ public class HistoricoRecetasController {
     private void VerDetalle() {
         Receta seleccionada = tblRecetas.getSelectionModel().getSelectedItem();
         if (seleccionada == null) {
-            Alerta.info("Info", "Debe seleccionar una receta para ver el detalle.");
+            Alerta.info("Información", "Debe seleccionar una receta para ver el detalle.");
             return;
         }
 

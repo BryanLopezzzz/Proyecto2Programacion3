@@ -14,7 +14,6 @@ public class FarmaceutaLogica {
         this.datos = new FarmaceutaDatos();
     }
 
-    // --------- Lectura ---------
 
     public List<Farmaceuta> listar() throws SQLException {
         return datos.listarTodos();
@@ -55,12 +54,10 @@ public class FarmaceutaLogica {
     }
 
 
-    // --------- Escritura ---------
 
     public void agregar(Farmaceuta farmaceuta) throws Exception {
         validarAlta(farmaceuta);
 
-        // Verificar unicidad
         if (datos.buscarPorId(farmaceuta.getId()) != null) {
             throw new Exception("Ya existe un farmaceuta con id: " + farmaceuta.getId());
         }

@@ -87,7 +87,6 @@ public class MedicoDatos implements Plantilla {
         return lista;
     }
 
-    // --- Métodos adicionales más prácticos (fuera de la interfaz) ---
 
     public Medico buscarPorId(String id) throws SQLException {
         String sql = "SELECT * FROM medico WHERE id = ?";

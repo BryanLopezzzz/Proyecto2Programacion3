@@ -819,7 +819,6 @@ private String procesarEliminarMedicamento(String[] partes) {
                 return "ERROR|Faltan detalles de medicamentos. Se esperaban " + numDetalles;
             }
 
-            // Buscar paciente y médico
             PacienteLogica pacienteLogica = new PacienteLogica();
             Paciente paciente = pacienteLogica.buscarPorId(pacienteId);
             if (paciente == null) {
@@ -832,7 +831,6 @@ private String procesarEliminarMedicamento(String[] partes) {
                 return "ERROR|Médico no encontrado: " + medicoId;
             }
 
-            // Crear objeto Receta
             Receta receta = new Receta();
             receta.setId(recetaId);
             receta.setPaciente(paciente);
@@ -841,7 +839,6 @@ private String procesarEliminarMedicamento(String[] partes) {
             receta.setFechaRetiro(java.time.LocalDate.parse(fechaRetiroStr));
             receta.setEstado(EstadoReceta.valueOf(estadoStr));
 
-            // Procesar detalles
             List<DetalleReceta> detalles = new ArrayList<>();
             MedicamentoLogica medicamentoLogica = new MedicamentoLogica();
 
@@ -859,13 +856,11 @@ private String procesarEliminarMedicamento(String[] partes) {
                 String indicaciones = detalleParts[2];
                 int dias = Integer.parseInt(detalleParts[3]);
 
-                // Buscar medicamento
                 Medicamento medicamento = medicamentoLogica.buscarPorCodigo(medCodigo);
                 if (medicamento == null) {
                     return "ERROR|Medicamento no encontrado: " + medCodigo;
                 }
 
-                // Crear detalle
                 DetalleReceta detalle = new DetalleReceta();
                 detalle.setMedicamento(medicamento);
                 detalle.setCantidad(cantidad);
@@ -875,10 +870,8 @@ private String procesarEliminarMedicamento(String[] partes) {
                 detalles.add(detalle);
             }
 
-            // Asignar detalles a la receta
             receta.setDetalles(detalles);
 
-            // Guardar en base de datos
             RecetaLogica recetaLogica = new RecetaLogica();
             Receta recetaCreada = recetaLogica.crearReceta(receta);
 
@@ -984,7 +977,6 @@ private String procesarEliminarMedicamento(String[] partes) {
         String destinatarioId = partes[1];
         String mensaje = partes[2];
 
-        // Notificar al servidor para que envíe el mensaje al destinatario
         boolean enviado = server.enviarMensajePrivado(this, destinatarioId, mensaje);
 
         if (enviado) {

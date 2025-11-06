@@ -14,7 +14,6 @@ package hospital.model;
             this.nombre = nombre;
         }
 
-        // === Getters & Setters ===
         public String getId() {
             return id;
         }

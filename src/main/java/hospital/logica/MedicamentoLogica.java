@@ -14,7 +14,6 @@ public class MedicamentoLogica {
         this.datos = new MedicamentoDatos();
     }
 
-    // --------- Lectura ---------
 
     public List<Medicamento> listar() throws SQLException {
         List<Object> objetos = datos.findAll();
@@ -57,7 +56,6 @@ public class MedicamentoLogica {
         return buscarPorNombre(nombre);
     }
 
-    // --------- Escritura ---------
 
     public void agregar(Medicamento medicamento) throws Exception {
         validarMedicamento(medicamento);
@@ -105,8 +103,6 @@ public class MedicamentoLogica {
             throw new Exception("El código es obligatorio");
         }
 
-        // Convertir código a int para la interfaz (aunque es String en la tabla)
-        // Esta es una limitación de la interfaz Plantilla
         try {
             return datos.delete(codigo);
         } catch (NumberFormatException e) {

@@ -41,8 +41,6 @@ public class MedicamentoDatos implements Plantilla {
 
     @Override
     public boolean delete(String id) throws SQLException {
-        // Aquí usamos "id" como "codigo", pero la interfaz exige int.
-        // Se convierte a String para compatibilidad.
         String sql = "DELETE FROM medicamento WHERE codigo = ?";
         try (Connection cn = DB.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {

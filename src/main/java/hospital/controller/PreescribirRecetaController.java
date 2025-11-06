@@ -149,7 +149,6 @@ public class PreescribirRecetaController {
                 if (pacienteSeleccionado == null || !pacienteSeleccionado.getId().equals(pacienteNuevo.getId())) {
                     pacienteSeleccionado = pacienteNuevo;
                     txtBuscarPaciente.setText(pacienteSeleccionado.getNombre() + " (" + pacienteSeleccionado.getId() + ")");
-                    // No limpiar los medicamentos, mantenerlos
                 }
                 actualizarEstadoBotones();
             }
